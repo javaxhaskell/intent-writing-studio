@@ -7,10 +7,10 @@ export const redirectManager = {
   get: (searchParams: ReadonlyURLSearchParams | null) => {
     const redirectTo = searchParams?.get('redirect_to');
 
-    return redirectTo ? decodeURIComponent(redirectTo) : '/dashboard';
+    return redirectTo ? decodeURIComponent(redirectTo) : '/studio';
   },
   save: (url: string) => {
-    if (typeof window === 'undefined' || url === '/dashboard') return;
+    if (typeof window === 'undefined' || url === '/studio') return;
 
     try {
       sessionStorage.setItem('auth_redirect', url);
