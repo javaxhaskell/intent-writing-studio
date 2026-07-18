@@ -5,9 +5,9 @@
 
 ## Current position
 
-- **Milestone**: 0 — Discovery and executable baseline (in progress)
-- **Branch**: `feat/m0-discovery`
-- **PR**: #1 (draft) — https://github.com/javaxhaskell/intent-writing-studio/pull/1
+- **Milestone**: 1 — Supabase foundation and secure tenancy (in progress). **Milestone 0: COMPLETE** — PR #1 merged 2026-07-18 17:47 UTC, CI green, Greptile round 2 clean (round-1 findings fixed: IR-2026-002 incident entry, max-warnings=0).
+- **Branch**: `feat/m1-supabase-foundation`
+- **PR**: not yet opened
 - **Date**: 2026-07-18
 
 ## Credential preflight (2026-07-18) — PASSED
@@ -47,8 +47,11 @@ rotation is queued for Milestone 6 hardening.
 
 ## Next actions
 
-1. Run Greptile review loop on PR #1 to zero actionable findings; confirm new CI green.
-2. Milestone 1 kickoff per architecture first-slice recommendation: environment hygiene commit (replace tracked codecrack.cn env files, Sentry DSN strip), `supabase init` + first migrations (orgs/members/projects/documents + RLS), auth bootstrap replacing `proxy.ts` cookie gate.
+1. M1 tenancy schema: migration 20260718000001 + seed + pgTAP RLS tests (workflow authoring + 3-lens adversarial review) → validate with `supabase db reset` + `supabase test db` locally.
+2. Env hygiene commit: replace tracked codecrack.cn env files, strip Sentry DSN.
+3. Auth bootstrap: Supabase Auth + replace proxy.ts cookie gate; generated DB types; CI migration checks.
+
+Done so far on this branch: supabase init + link committed (42607e4); DB password live-verified; remote DB confirmed empty.
 
 ## Open risks (full ranked list in docs/architecture.md)
 
