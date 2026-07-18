@@ -7,7 +7,7 @@
 
 - **Milestone**: 0 — Discovery and executable baseline (in progress)
 - **Branch**: `feat/m0-discovery`
-- **PR**: not yet opened
+- **PR**: #1 (draft) — https://github.com/javaxhaskell/intent-writing-studio/pull/1
 - **Date**: 2026-07-18
 
 ## Credential preflight (2026-07-18) — PASSED
@@ -47,7 +47,7 @@ rotation is queued for Milestone 6 hardening.
 
 ## Next actions
 
-1. Push `feat/m0-discovery`, open Milestone 0 draft PR, run Greptile review loop to zero actionable findings.
+1. Run Greptile review loop on PR #1 to zero actionable findings; confirm new CI green.
 2. Milestone 1 kickoff per architecture first-slice recommendation: environment hygiene commit (replace tracked codecrack.cn env files, Sentry DSN strip), `supabase init` + first migrations (orgs/members/projects/documents + RLS), auth bootstrap replacing `proxy.ts` cookie gate.
 
 ## Open risks (full ranked list in docs/architecture.md)
