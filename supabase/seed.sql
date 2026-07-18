@@ -17,10 +17,10 @@
 --
 --   user                        | Org Alpha | Org Beta
 --   ----------------------------+-----------+---------
---   alice.owner@example.com     | owner     | —
---   bob.editor@example.com      | editor    | viewer
---   carol.owner@example.com     | —         | owner
---   dave.solo@example.com       | —         | —        (member of NO org)
+--   alice.owner@nullfellows.dev     | owner     | —
+--   bob.editor@nullfellows.dev      | editor    | viewer
+--   carol.owner@nullfellows.dev     | —         | owner
+--   dave.solo@nullfellows.dev       | —         | —        (member of NO org)
 --
 -- All four users sign in locally with password: password123
 --
@@ -69,7 +69,7 @@ values
     '00000000-0000-4000-8000-000000000001',
     'authenticated',
     'authenticated',
-    'alice.owner@example.com',
+    'alice.owner@nullfellows.dev',
     extensions.crypt('password123', '$2a$10$abcdefghijklmnopqrstuv'),
     '2026-07-18T00:00:00Z',
     '{"provider": "email", "providers": ["email"]}'::jsonb,
@@ -83,7 +83,7 @@ values
     '00000000-0000-4000-8000-000000000002',
     'authenticated',
     'authenticated',
-    'bob.editor@example.com',
+    'bob.editor@nullfellows.dev',
     extensions.crypt('password123', '$2a$10$abcdefghijklmnopqrstuv'),
     '2026-07-18T00:00:00Z',
     '{"provider": "email", "providers": ["email"]}'::jsonb,
@@ -97,7 +97,7 @@ values
     '00000000-0000-4000-8000-000000000003',
     'authenticated',
     'authenticated',
-    'carol.owner@example.com',
+    'carol.owner@nullfellows.dev',
     extensions.crypt('password123', '$2a$10$abcdefghijklmnopqrstuv'),
     '2026-07-18T00:00:00Z',
     '{"provider": "email", "providers": ["email"]}'::jsonb,
@@ -111,7 +111,7 @@ values
     '00000000-0000-4000-8000-000000000004',
     'authenticated',
     'authenticated',
-    'dave.solo@example.com',
+    'dave.solo@nullfellows.dev',
     extensions.crypt('password123', '$2a$10$abcdefghijklmnopqrstuv'),
     '2026-07-18T00:00:00Z',
     '{"provider": "email", "providers": ["email"]}'::jsonb,
@@ -139,7 +139,7 @@ values
   (
     '60000000-0000-4000-8000-000000000001',
     '00000000-0000-4000-8000-000000000001',
-    '{"sub": "00000000-0000-4000-8000-000000000001", "email": "alice.owner@example.com", "email_verified": true, "phone_verified": false}'::jsonb,
+    '{"sub": "00000000-0000-4000-8000-000000000001", "email": "alice.owner@nullfellows.dev", "email_verified": true, "phone_verified": false}'::jsonb,
     'email',
     '00000000-0000-4000-8000-000000000001',
     '2026-07-18T00:00:00Z',
@@ -149,7 +149,7 @@ values
   (
     '60000000-0000-4000-8000-000000000002',
     '00000000-0000-4000-8000-000000000002',
-    '{"sub": "00000000-0000-4000-8000-000000000002", "email": "bob.editor@example.com", "email_verified": true, "phone_verified": false}'::jsonb,
+    '{"sub": "00000000-0000-4000-8000-000000000002", "email": "bob.editor@nullfellows.dev", "email_verified": true, "phone_verified": false}'::jsonb,
     'email',
     '00000000-0000-4000-8000-000000000002',
     '2026-07-18T00:00:00Z',
@@ -159,7 +159,7 @@ values
   (
     '60000000-0000-4000-8000-000000000003',
     '00000000-0000-4000-8000-000000000003',
-    '{"sub": "00000000-0000-4000-8000-000000000003", "email": "carol.owner@example.com", "email_verified": true, "phone_verified": false}'::jsonb,
+    '{"sub": "00000000-0000-4000-8000-000000000003", "email": "carol.owner@nullfellows.dev", "email_verified": true, "phone_verified": false}'::jsonb,
     'email',
     '00000000-0000-4000-8000-000000000003',
     '2026-07-18T00:00:00Z',
@@ -169,7 +169,7 @@ values
   (
     '60000000-0000-4000-8000-000000000004',
     '00000000-0000-4000-8000-000000000004',
-    '{"sub": "00000000-0000-4000-8000-000000000004", "email": "dave.solo@example.com", "email_verified": true, "phone_verified": false}'::jsonb,
+    '{"sub": "00000000-0000-4000-8000-000000000004", "email": "dave.solo@nullfellows.dev", "email_verified": true, "phone_verified": false}'::jsonb,
     'email',
     '00000000-0000-4000-8000-000000000004',
     '2026-07-18T00:00:00Z',
