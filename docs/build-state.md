@@ -47,11 +47,11 @@ rotation is queued for Milestone 6 hardening.
 
 ## Next actions
 
-1. M1 tenancy schema: migration 20260718000001 + seed + pgTAP RLS tests (workflow authoring + 3-lens adversarial review) → validate with `supabase db reset` + `supabase test db` locally.
-2. Env hygiene commit: replace tracked codecrack.cn env files, strip Sentry DSN.
-3. Auth bootstrap: Supabase Auth + replace proxy.ts cookie gate; generated DB types; CI migration checks.
+1. Open M1 slice-1 PR (schema + hygiene + DB CI) → Greptile loop → merge.
+2. M1 slice 2 — auth bootstrap: Supabase Auth (magic link + GitHub), replace proxy.ts cookie gate and the /documents/:id/permissions dependency, session handling in the data layer.
+3. M1 remainder: Supabase GitHub integration + preview branching (needs Pro plan check), two-org browser-level isolation verification (M1 done-criterion).
 
-Done so far on this branch: supabase init + link committed (42607e4); DB password live-verified; remote DB confirmed empty.
+Done so far on this branch: supabase scaffolding + link; tenancy migration 20260718000001 + grants 20260718000002 with RLS enabled+forced; deterministic seed; **177/177 pgTAP tests pass locally** (db reset clean); generated DB types committed; env hygiene — all runtime coupling to upstream's live infra severed (env files, Sentry DSN/PII, SEO URLs, workflow websocket); CI gains a database job (migrations + pgTAP + types-drift).
 
 ## Open risks (full ranked list in docs/architecture.md)
 

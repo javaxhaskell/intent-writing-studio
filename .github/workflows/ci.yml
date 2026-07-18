@@ -40,3 +40,26 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+  database:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start local database and apply migrations
+        run: supabase db start
+
+      - name: Run pgTAP suite (RLS, tenancy isolation, role gates)
+        run: supabase test db
+
+      - name: Generated types drift check
+        run: |
+          supabase gen types typescript --db-url "postgresql://postgres:postgres@127.0.0.1:54322/postgres" > /tmp/database.gen.ts
+          npx prettier --write /tmp/database.gen.ts
+          diff -u apps/DocFlow/src/types/database.ts /tmp/database.gen.ts
