@@ -59,7 +59,9 @@ jobs:
         run: supabase test db
 
       - name: Generated types drift check
+        # Format with the repo's pinned prettier version + config so the diff
+        # compares content, not formatter-version quirks.
         run: |
           supabase gen types typescript --db-url "postgresql://postgres:postgres@127.0.0.1:54322/postgres" > /tmp/database.gen.ts
-          npx prettier --write /tmp/database.gen.ts
+          npx -y prettier@3.8.1 --config .prettierrc --write /tmp/database.gen.ts
           diff -u apps/DocFlow/src/types/database.ts /tmp/database.gen.ts
