@@ -354,6 +354,36 @@ than forensic archaeology.
   through a redaction filter (jq field allowlists) rather than echoed raw; this goes into
   the tooling runbook before Milestone 1.
 
+### IR-2026-002 — Upstream Tiptap Pro registry token inherited in fork history (2026-07-18)
+
+- **What happened.** Upstream DocFlow committed a plaintext Tiptap Pro registry auth token
+  in `.github/workflows/preview.yml`. This fork inherited it at base commit `32edc5f`.
+  Milestone 0 discovery found it; the workflow was deleted from HEAD in commit `1b45a5e`
+  so it can never execute in this repository's CI.
+- **Exposure assessment.** The token remains retrievable from this fork's git history
+  (`git show 32edc5f:.github/workflows/preview.yml`) — and, decisively, from the upstream
+  public repository, where it has been world-readable in every clone since the workflow
+  was first committed. It is not a credential of this project; it grants access to the
+  upstream maintainers' private Tiptap Pro npm registry scope.
+- **Decision — documented exception to the T7 rotate-or-expunge policy.**
+  1. *Rotation* is not ours to perform: the credential belongs to the upstream
+     maintainers and only they can revoke it.
+  2. *History expungement* of this fork (filter-repo/BFG) is deliberately **not** done:
+     it would provide zero security benefit while the identical token stays public in
+     upstream's history, and it would rewrite every inherited SHA — breaking the recorded
+     base-SHA lineage in `docs/upstream.md`, the upstream cherry-pick strategy (ADR 0001),
+     and the GitHub fork relationship. Destroying provenance to hide a value that remains
+     public elsewhere is security theater with real costs.
+  3. This repository never uses the token; no workflow, config, or dependency references
+     the Tiptap Pro registry after `1b45a5e`.
+- **Follow-up.** Responsible disclosure to upstream (issue or private contact advising
+  token rotation) is recommended and **flagged to the project owner for approval** — it is
+  an outward-facing communication and is not performed unilaterally. If upstream rotates
+  the token, the exposure becomes moot; expungement can be revisited then if ever desired.
+- **Prevention.** Our replacement CI contains no credentials of any kind; future workflow
+  or config additions carrying tokens are caught by the review rules in `.greptile/` and
+  the no-secrets-in-diff release check (spec §14).
+
 ## 7. Open risks and questions
 
 1. **Websocket hosting is undecided** (dedicated host vs Supabase Realtime y-provider vs

@@ -30,7 +30,7 @@ jobs:
         run: pnpm format:ci
 
       - name: Lint (no autofix)
-        run: pnpm --dir apps/DocFlow exec eslint "src/**/*.{ts,tsx}" --max-warnings=9999
+        run: pnpm --dir apps/DocFlow exec eslint "src/**/*.{ts,tsx}" --max-warnings=0
 
       - name: Type check
         run: pnpm type-check
