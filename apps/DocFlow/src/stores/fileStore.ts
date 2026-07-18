@@ -2,15 +2,14 @@ import { create } from 'zustand';
 
 import type { FileItem } from '@/types/file-system';
 import DocumentApi from '@/services/document';
-import { DocumentItem, OrganizationDocumentGroup } from '@/services/document/type';
-import { organizationService } from '@/services/organization';
+import { CreateDocumentDto, DocumentItem } from '@/services/document/type';
 
 export interface DocumentGroup {
   id: string;
   name: string;
   type: 'personal' | 'organization' | 'shared';
   files: FileItem[];
-  organizationId?: number;
+  organizationId?: string;
 }
 
 interface FileState {
@@ -123,13 +122,13 @@ export const useFileStore = create<FileState>((set, get) => ({
 
   // 处理API返回的文档数据
   processApiDocuments: (documents) => {
-    const docMap = new Map<number, DocumentItem>();
+    const docMap = new Map<string, DocumentItem>();
     documents.forEach((doc) => {
       docMap.set(doc.id, doc);
     });
 
     const result: FileItem[] = [];
-    const childrenMap = new Map<number, FileItem[]>();
+    const childrenMap = new Map<string, FileItem[]>();
 
     docMap.forEach((doc) => {
       childrenMap.set(doc.id, []);
@@ -137,7 +136,7 @@ export const useFileStore = create<FileState>((set, get) => ({
 
     docMap.forEach((doc) => {
       const fileItem: FileItem = {
-        id: String(doc.id),
+        id: doc.id,
         name: doc.title,
         type: doc.type === 'FOLDER' ? 'folder' : 'file',
         order: doc.sort_order,
@@ -191,11 +190,9 @@ export const useFileStore = create<FileState>((set, get) => ({
     setIsLoading(true);
 
     try {
-      // 并行获取组织列表和文档列表
-      const [orgListResult, docsResult] = await Promise.all([
-        organizationService.getMyOrganizations({ page: 1, limit: 100 }),
-        DocumentApi.GetDocument(),
-      ]);
+      // 单次 RLS-scoped 查询：GetDocument（Supabase）已内嵌调用者所属组织的
+      // id+name（含无文档的组织），不再并行请求 legacy /api/v1/organizations。
+      const docsResult = await DocumentApi.GetDocument();
 
       if (docsResult?.data?.code === 200 && docsResult?.data?.data) {
         const { personal, organizations: orgDocs, shared } = docsResult.data.data;
@@ -210,31 +207,19 @@ export const useFileStore = create<FileState>((set, get) => ({
           files: personalFiles,
         });
 
-        // 处理组织文档 - 先获取所有组织，然后匹配文档
-        if (orgListResult && orgListResult.list) {
-          // 创建一个映射，便于快速查找组织的文档
-          const orgDocsMap = new Map<number, DocumentItem[]>();
+        // 为每个组织创建一个分组（即使没有文档）
+        (orgDocs || []).forEach((org) => {
+          const documents = org.documents || [];
+          const orgFiles = documents.length > 0 ? processApiDocuments(documents) : [];
 
-          if (orgDocs && orgDocs.length > 0) {
-            orgDocs.forEach((org: OrganizationDocumentGroup) => {
-              orgDocsMap.set(org.id, org.documents || []);
-            });
-          }
-
-          // 为每个组织创建一个分组（即使没有文档）
-          orgListResult.list.forEach((org) => {
-            const documents = orgDocsMap.get(org.id) || [];
-            const orgFiles = documents.length > 0 ? processApiDocuments(documents) : [];
-
-            groups.push({
-              id: `org-${org.id}`,
-              name: org.name,
-              type: 'organization',
-              files: orgFiles,
-              organizationId: org.id,
-            });
+          groups.push({
+            id: `org-${org.id}`,
+            name: org.name,
+            type: 'organization',
+            files: orgFiles,
+            organizationId: org.id,
           });
-        }
+        });
 
         // 处理分享文档
         if (shared && shared.length > 0) {
@@ -299,6 +284,9 @@ export const useFileStore = create<FileState>((set, get) => ({
           setExpandedFolders(initialExpandedFolders);
           setExpandedGroups(initialExpandedGroups);
         }
+      } else if (docsResult?.error) {
+        // 保持既有约定：列表加载失败仅记录日志（侧栏显示空态），不弹错误 UI
+        console.error('加载文档列表失败:', docsResult.error);
       }
     } catch (error) {
       console.error('加载文档列表失败:', error);
@@ -312,10 +300,11 @@ export const useFileStore = create<FileState>((set, get) => ({
     const { documentGroups } = get();
     const group = documentGroups.find((g) => g.id === groupId);
 
-    const payload: any = {
+    const payload: CreateDocumentDto = {
       title: name,
       type: type === 'folder' ? 'FOLDER' : 'FILE',
-      parent_id: parentId ? Number(parentId) : undefined,
+      // ids 现为 uuid 字符串，不再做 Number() 转换
+      parent_id: parentId,
     };
 
     // 如果是组织文档，添加组织ID

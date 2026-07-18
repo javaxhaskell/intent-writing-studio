@@ -1,0 +1,13 @@
+{
+  "name": "e2e",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Playwright end-to-end tests for apps/DocFlow (multi-tenant isolation against the local Supabase stack).",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.51.1",
+    "@types/node": "22.15.18"
+  }
+}

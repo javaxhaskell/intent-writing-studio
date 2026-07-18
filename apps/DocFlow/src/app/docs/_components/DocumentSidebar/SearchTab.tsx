@@ -20,7 +20,7 @@ interface SearchResult {
   is_starred: boolean;
   updated_at: string;
   created_at: string;
-  parent_id?: number;
+  parent_id?: string;
   path?: string[];
   matches: {
     field: 'title' | 'content';
@@ -38,7 +38,7 @@ interface FileStructure {
   is_starred: boolean;
   updated_at: string;
   created_at: string;
-  parent_id?: number;
+  parent_id?: string;
 }
 
 const SearchTab = ({ isActive }: SearchTabProps) => {
@@ -54,13 +54,13 @@ const SearchTab = ({ isActive }: SearchTabProps) => {
 
   // 处理API返回的文档数据，转换为文件结构
   const processDocumentsToFileStructure = (docs: DocumentItem[]): FileStructure[] => {
-    const docMap = new Map<number, DocumentItem>();
+    const docMap = new Map<string, DocumentItem>();
     docs.forEach((doc) => {
       docMap.set(doc.id, doc);
     });
 
     const result: FileStructure[] = [];
-    const childrenMap = new Map<number, FileStructure[]>();
+    const childrenMap = new Map<string, FileStructure[]>();
 
     docMap.forEach((doc) => {
       childrenMap.set(doc.id, []);

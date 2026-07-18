@@ -3,9 +3,9 @@
   "configurations": [
     {
       "name": "docflow-dev",
-      "runtimeExecutable": "fnm",
-      "runtimeArgs": ["exec", "--using=24", "--", "pnpm", "--dir", "apps/DocFlow", "dev"],
-      "port": 3000
+      "runtimeExecutable": "env",
+      "runtimeArgs": ["PORT=3001", "fnm", "exec", "--using=24", "--", "pnpm", "--dir", "apps/DocFlow", "dev"],
+      "port": 3001
     }
   ]
 }
