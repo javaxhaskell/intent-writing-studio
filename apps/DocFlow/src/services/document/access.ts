@@ -99,7 +99,7 @@ export async function getDocumentAccess(documentId: string): Promise<{
   const user = userResult.data.user;
 
   if (userResult.error || !user) {
-    return { data: null, error: '未登录或登录已过期，请重新登录后再访问文档' };
+    return { data: null, error: 'You are signed out or your session expired — please sign in again to open this document.' };
   }
 
   if (accessResult.error) {

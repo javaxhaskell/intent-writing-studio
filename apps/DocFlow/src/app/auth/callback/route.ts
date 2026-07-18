@@ -3,7 +3,7 @@ import type { EmailOtpType } from '@supabase/supabase-js';
 
 import { createClient } from '@/lib/supabase/server';
 
-const DEFAULT_NEXT = '/dashboard';
+const DEFAULT_NEXT = '/studio';
 
 /**
  * Allowlist for the post-login `next` redirect: same-origin relative paths

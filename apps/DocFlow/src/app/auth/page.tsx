@@ -9,7 +9,7 @@ import { redirectManager } from '@/utils/redirect-manager';
 import { MagicLinkForm } from '@/app/auth/_components/magic-link-form';
 import { AuthBackground } from '@/app/auth/_components/auth-background';
 
-const DEFAULT_REDIRECT = '/dashboard';
+const DEFAULT_REDIRECT = '/studio';
 
 /**
  * Defense in depth: the callback route re-sanitizes `next` server-side, but
