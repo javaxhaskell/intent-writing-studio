@@ -1,0 +1,9 @@
+.next
+.turbo
+node_modules
+e2e
+docs
+supabase/.temp
+coverage
+*.log
+.claude
