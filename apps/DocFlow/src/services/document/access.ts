@@ -91,18 +91,7 @@ export async function getDocumentAccess(documentId: string): Promise<{
   const supabase = createClient();
 
   const [accessResult, userResult, titleResult] = await Promise.all([
-    // Cast: src/types/database.ts has not been regenerated since the
-    // get_document_access migration landed; `as never` keeps this compiling
-    // both before and after that regeneration.
-    supabase.rpc(
-      'get_document_access' as never,
-      {
-        p_document_id: documentId,
-      } as never,
-    ) as unknown as Promise<{
-      data: DocumentAccessRow[] | null;
-      error: { message: string } | null;
-    }>,
+    supabase.rpc('get_document_access', { p_document_id: documentId }),
     supabase.auth.getUser(),
     supabase.from('documents').select('title').eq('id', documentId).maybeSingle(),
   ]);

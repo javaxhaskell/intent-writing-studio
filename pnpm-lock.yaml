@@ -7,13 +7,6 @@ settings:
 importers:
 
   .:
-    dependencies:
-      '@supabase/ssr':
-        specifier: ^0.12.3
-        version: 0.12.3(@supabase/supabase-js@2.110.7)
-      '@supabase/supabase-js':
-        specifier: ^2.110.7
-        version: 2.110.7
     devDependencies:
       '@commitlint/cli':
         specifier: ^19.8.0
