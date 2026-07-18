@@ -27,14 +27,14 @@ export const TestimonialCard = ({ testimonial, delay }: TestimonialCardProps) =>
 export const testimonials: Testimonial[] = [
   {
     avatarSrc: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
-    name: '张小雨',
-    handle: '@zhangxiaoyu',
-    text: '非常棒的平台！用户体验流畅，功能恰到好处，完全满足我的需求。',
+    name: 'Sarah Lin',
+    handle: '@sarahlin',
+    text: 'A fantastic platform. The experience is smooth and the features are exactly what I need.',
   },
   {
     avatarSrc: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Marcus',
-    name: '李明',
-    handle: '@liming',
-    text: '这个服务彻底改变了我的工作方式。设计简洁，功能强大，支持也很到位。',
+    name: 'Marcus Lee',
+    handle: '@marcuslee',
+    text: 'This completely changed how I work. Clean design, powerful features, great support.',
   },
 ];
