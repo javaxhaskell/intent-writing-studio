@@ -28,6 +28,73 @@ export type Database = {
   };
   public: {
     Tables: {
+      doc_blocks: {
+        Row: {
+          content_hash: string;
+          content_md: string;
+          created_at: string;
+          document_id: string;
+          freshness: string;
+          id: string;
+          intent_node_id: string;
+          locked: boolean;
+          organization_id: string;
+          position: number;
+          proposed_md: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          content_hash?: string;
+          content_md?: string;
+          created_at?: string;
+          document_id: string;
+          freshness?: string;
+          id?: string;
+          intent_node_id: string;
+          locked?: boolean;
+          organization_id: string;
+          position?: number;
+          proposed_md?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          content_hash?: string;
+          content_md?: string;
+          created_at?: string;
+          document_id?: string;
+          freshness?: string;
+          id?: string;
+          intent_node_id?: string;
+          locked?: boolean;
+          organization_id?: string;
+          position?: number;
+          proposed_md?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'doc_blocks_document_id_organization_id_fkey';
+            columns: ['document_id', 'organization_id'];
+            isOneToOne: false;
+            referencedRelation: 'documents';
+            referencedColumns: ['id', 'organization_id'];
+          },
+          {
+            foreignKeyName: 'doc_blocks_intent_node_id_organization_id_fkey';
+            columns: ['intent_node_id', 'organization_id'];
+            isOneToOne: false;
+            referencedRelation: 'intent_nodes';
+            referencedColumns: ['id', 'organization_id'];
+          },
+          {
+            foreignKeyName: 'doc_blocks_organization_id_fkey';
+            columns: ['organization_id'];
+            isOneToOne: false;
+            referencedRelation: 'organizations';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       document_versions: {
         Row: {
           content: Json;
@@ -107,6 +174,73 @@ export type Database = {
           },
         ];
       };
+      intent_nodes: {
+        Row: {
+          created_at: string;
+          document_id: string;
+          id: string;
+          kind: string;
+          organization_id: string;
+          parent_id: string | null;
+          pathway_id: string | null;
+          position: number;
+          purpose: string;
+          status: string;
+          title: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          document_id: string;
+          id?: string;
+          kind: string;
+          organization_id: string;
+          parent_id?: string | null;
+          pathway_id?: string | null;
+          position?: number;
+          purpose?: string;
+          status?: string;
+          title: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          document_id?: string;
+          id?: string;
+          kind?: string;
+          organization_id?: string;
+          parent_id?: string | null;
+          pathway_id?: string | null;
+          position?: number;
+          purpose?: string;
+          status?: string;
+          title?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'intent_nodes_document_id_organization_id_fkey';
+            columns: ['document_id', 'organization_id'];
+            isOneToOne: false;
+            referencedRelation: 'documents';
+            referencedColumns: ['id', 'organization_id'];
+          },
+          {
+            foreignKeyName: 'intent_nodes_organization_id_fkey';
+            columns: ['organization_id'];
+            isOneToOne: false;
+            referencedRelation: 'organizations';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'intent_nodes_parent_id_fkey';
+            columns: ['parent_id'];
+            isOneToOne: false;
+            referencedRelation: 'intent_nodes';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       organization_members: {
         Row: {
           created_at: string;
@@ -174,6 +308,99 @@ export type Database = {
           updated_at?: string;
         };
         Relationships: [];
+      };
+      pathway_sets: {
+        Row: {
+          brief: Json;
+          created_at: string;
+          document_id: string;
+          id: string;
+          model_id: string;
+          organization_id: string;
+          status: string;
+          updated_at: string;
+        };
+        Insert: {
+          brief: Json;
+          created_at?: string;
+          document_id: string;
+          id?: string;
+          model_id?: string;
+          organization_id: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Update: {
+          brief?: Json;
+          created_at?: string;
+          document_id?: string;
+          id?: string;
+          model_id?: string;
+          organization_id?: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'pathway_sets_document_id_organization_id_fkey';
+            columns: ['document_id', 'organization_id'];
+            isOneToOne: false;
+            referencedRelation: 'documents';
+            referencedColumns: ['id', 'organization_id'];
+          },
+          {
+            foreignKeyName: 'pathway_sets_organization_id_fkey';
+            columns: ['organization_id'];
+            isOneToOne: false;
+            referencedRelation: 'organizations';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      pathways: {
+        Row: {
+          created_at: string;
+          id: string;
+          organization_id: string;
+          pathway_set_id: string;
+          payload: Json;
+          rank: number;
+          selected: boolean;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          organization_id: string;
+          pathway_set_id: string;
+          payload: Json;
+          rank?: number;
+          selected?: boolean;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          organization_id?: string;
+          pathway_set_id?: string;
+          payload?: Json;
+          rank?: number;
+          selected?: boolean;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'pathways_organization_id_fkey';
+            columns: ['organization_id'];
+            isOneToOne: false;
+            referencedRelation: 'organizations';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'pathways_pathway_set_id_organization_id_fkey';
+            columns: ['pathway_set_id', 'organization_id'];
+            isOneToOne: false;
+            referencedRelation: 'pathway_sets';
+            referencedColumns: ['id', 'organization_id'];
+          },
+        ];
       };
       projects: {
         Row: {

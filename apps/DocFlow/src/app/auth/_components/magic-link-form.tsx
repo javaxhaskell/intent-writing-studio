@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { MailCheck } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
@@ -18,15 +19,56 @@ const emailSchema = z.string().email();
  */
 const GENERIC_SEND_ERROR = 'Could not send the link right now — please try again in a moment';
 
+const GENERIC_DEMO_ERROR = 'Demo sign-in is unavailable right now — please try again in a moment';
+
+/**
+ * Shared demo account (seeded by scripts/seed-demo-hosted.mjs). These are
+ * deliberately public demo credentials, not secrets — the env vars only exist
+ * so hosted deployments can rotate them without a code change.
+ */
+const DEMO_EMAIL = process.env.NEXT_PUBLIC_DEMO_EMAIL || 'demo@nullfellows.dev';
+const DEMO_PASSWORD = process.env.NEXT_PUBLIC_DEMO_PASSWORD || 'intent-demo-2026';
+
 interface MagicLinkFormProps {
   /** Sanitized same-origin path the user lands on after clicking the link. */
   redirectTo: string;
 }
 
 export const MagicLinkForm = ({ redirectTo }: MagicLinkFormProps) => {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [isDemoSigningIn, setIsDemoSigningIn] = useState(false);
   const [sentTo, setSentTo] = useState<string | null>(null);
+
+  const handleDemoSignIn = async () => {
+    setIsDemoSigningIn(true);
+
+    try {
+      const supabase = createClient();
+
+      const { error } = await supabase.auth.signInWithPassword({
+        email: DEMO_EMAIL,
+        password: DEMO_PASSWORD,
+      });
+
+      if (error) {
+        console.error('demo signInWithPassword failed:', error.message);
+        toast.error(GENERIC_DEMO_ERROR);
+
+        return;
+      }
+
+      // Same sanitized target the magic-link flow lands on (auth/page.tsx).
+      router.push(redirectTo);
+      router.refresh();
+    } catch (error) {
+      console.error('demo signInWithPassword threw:', error);
+      toast.error(GENERIC_DEMO_ERROR);
+    } finally {
+      setIsDemoSigningIn(false);
+    }
+  };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -95,60 +137,83 @@ export const MagicLinkForm = ({ redirectTo }: MagicLinkFormProps) => {
   }
 
   return (
-    <form className="space-y-3.5 md:space-y-4" onSubmit={handleSubmit}>
-      <div className="animate-fade-in" style={{ animationDelay: '300ms' }}>
-        <label className="block text-sm font-medium text-gray-900 mb-1.5" htmlFor="email">
-          Email address
-        </label>
-        <InputWrapper>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            required
-            placeholder="you@example.com"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            className="w-full bg-transparent text-base px-3.5 py-3 rounded-xl focus:outline-none text-gray-900 placeholder:text-gray-500"
-          />
-        </InputWrapper>
+    <div className="space-y-3.5 md:space-y-4">
+      <form className="space-y-3.5 md:space-y-4" onSubmit={handleSubmit}>
+        <div className="animate-fade-in" style={{ animationDelay: '300ms' }}>
+          <label className="block text-sm font-medium text-gray-900 mb-1.5" htmlFor="email">
+            Email address
+          </label>
+          <InputWrapper>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              placeholder="you@example.com"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              className="w-full bg-transparent text-base px-3.5 py-3 rounded-xl focus:outline-none text-gray-900 placeholder:text-gray-500"
+            />
+          </InputWrapper>
+        </div>
+
+        <button
+          type="submit"
+          disabled={isSending}
+          className="w-full rounded-xl bg-gray-900 py-3.5 font-bold text-base text-white hover:bg-gray-800 active:bg-gray-700 transition-all duration-300 shadow-lg hover:shadow-xl animate-fade-in transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-gray-900 cursor-pointer"
+          style={{ animationDelay: '500ms' }}
+        >
+          {isSending ? (
+            <span className="flex items-center justify-center gap-2 font-semibold">
+              <svg
+                className="animate-spin h-5 w-5"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+              <span>Sending link...</span>
+            </span>
+          ) : (
+            'Send magic link'
+          )}
+        </button>
+      </form>
+
+      {/* Demo access: shared seeded account, no email round-trip needed */}
+      <div
+        className="relative flex items-center justify-center animate-fade-in"
+        style={{ animationDelay: '600ms' }}
+      >
+        <span className="w-full border-t border-gray-200"></span>
+        <span className="px-3 text-sm md:text-xs text-gray-500 bg-white absolute font-medium">
+          or
+        </span>
       </div>
 
       <button
-        type="submit"
-        disabled={isSending}
-        className="w-full rounded-xl bg-gray-900 py-3.5 font-bold text-base text-white hover:bg-gray-800 active:bg-gray-700 transition-all duration-300 shadow-lg hover:shadow-xl animate-fade-in transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-gray-900 cursor-pointer"
-        style={{ animationDelay: '500ms' }}
+        type="button"
+        onClick={handleDemoSignIn}
+        disabled={isDemoSigningIn || isSending}
+        className="w-full rounded-xl border border-gray-300 bg-white py-3.5 font-bold text-base text-gray-900 hover:bg-gray-50 active:bg-gray-100 transition-all duration-300 shadow-sm hover:shadow-md animate-fade-in transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-white cursor-pointer"
+        style={{ animationDelay: '650ms' }}
       >
-        {isSending ? (
-          <span className="flex items-center justify-center gap-2 font-semibold">
-            <svg
-              className="animate-spin h-5 w-5"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
-            </svg>
-            <span>Sending link...</span>
-          </span>
-        ) : (
-          'Send magic link'
-        )}
+        {isDemoSigningIn ? 'Signing in to the demo...' : 'Try the demo instantly'}
       </button>
-    </form>
+    </div>
   );
 };
