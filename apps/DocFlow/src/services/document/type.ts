@@ -1,34 +1,36 @@
 import { JSONContent } from '@tiptap/core';
 
+// Ids are Supabase uuid strings since the move off /api/v1 (they were numeric
+// autoincrements in the legacy backend).
 export interface DocumentItem {
-  id: number;
+  id: string;
   title: string;
   type: 'FILE' | 'FOLDER';
   sort_order: number;
   is_starred: boolean;
   created_at: string;
   updated_at: string;
-  parent_id: number | null;
-  owner_id: number;
-  organization_id: number | null;
+  parent_id: string | null;
+  owner_id: string;
+  organization_id: string | null;
   owner: DocumentOwner;
   organization?: DocumentOrganization | null;
   permission: 'VIEW' | 'COMMENT' | 'EDIT' | 'MANAGE' | 'FULL';
 }
 
 export interface DocumentOwner {
-  id: number;
+  id: string;
   name: string | null;
   avatar_url: string | null;
 }
 
 export interface DocumentOrganization {
-  id: number;
+  id: string;
   name: string;
 }
 
 export interface OrganizationDocumentGroup {
-  id: number;
+  id: string;
   name: string;
   documents: DocumentItem[];
 }
@@ -91,7 +93,7 @@ export interface GetDocumentsResponse {
 }
 
 export interface DocumentResponse {
-  id: number;
+  id: string;
   title: string;
   type: 'FILE' | 'FOLDER';
   content?: JSONContent;
@@ -100,7 +102,7 @@ export interface DocumentResponse {
 }
 
 export interface LatestDocumentItem {
-  id: number;
+  id: string;
   title: string;
   type: 'FILE' | 'FOLDER';
   updated_at: string;
@@ -111,10 +113,10 @@ export interface LatestDocumentItem {
 export interface CreateDocumentDto {
   title: string;
   type: 'FILE' | 'FOLDER';
-  parent_id?: number;
+  parent_id?: string;
   sort_order?: number;
   is_starred?: boolean;
-  organization_id?: number;
+  organization_id?: string;
   content?: JSONContent | '';
 }
 
@@ -137,19 +139,19 @@ export interface ShareLinkResponse {
 }
 
 export interface DeleteDocumentDto {
-  document_id: number;
+  document_id: string;
   permanent?: boolean;
 }
 
 export interface RenameDocumentDto {
-  document_id: number;
+  document_id: string;
   title: string;
 }
 
 export interface DuplicateDocumentDto {
-  document_id: number;
+  document_id: string;
   title?: string;
-  parent_id?: number;
+  parent_id?: string;
 }
 
 export interface AccessSharedDocumentDto {
@@ -223,8 +225,8 @@ export interface DocumentPermissionsResponse {
 }
 
 export interface MoveDocumentsDto {
-  document_ids: number[];
-  target_folder_id: number;
+  document_ids: string[];
+  target_folder_id: string | null;
 }
 
 export interface DocumentSearchItem {

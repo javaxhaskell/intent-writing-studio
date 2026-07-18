@@ -31,7 +31,7 @@ export const useFileOperations = (refreshFiles: () => Promise<void>): UseFileOpe
   // 处理文件下载
   const handleDownload = async (file: FileItem) => {
     try {
-      const response = await DocumentApi.DownloadDocument(parseInt(file.id));
+      const response = await DocumentApi.DownloadDocument(file.id);
 
       if (response?.data?.data) {
         // 创建下载链接
@@ -57,7 +57,7 @@ export const useFileOperations = (refreshFiles: () => Promise<void>): UseFileOpe
   const handleDuplicate = async (file: FileItem) => {
     try {
       const response = await DocumentApi.DuplicateDocument({
-        document_id: parseInt(file.id),
+        document_id: file.id,
         title: `${file.name} - 副本`,
       });
 
@@ -86,7 +86,7 @@ export const useFileOperations = (refreshFiles: () => Promise<void>): UseFileOpe
 
       const fileName = fileToDelete.name;
       const response = await DocumentApi.DeleteDocument({
-        document_id: parseInt(fileToDelete.id),
+        document_id: fileToDelete.id,
         permanent: false, // 软删除
       });
 
@@ -114,7 +114,7 @@ export const useFileOperations = (refreshFiles: () => Promise<void>): UseFileOpe
   const handleRename = async (fileId: string, newName: string) => {
     try {
       const response = await DocumentApi.RenameDocument({
-        document_id: parseInt(fileId),
+        document_id: fileId,
         title: newName.trim(),
       });
 
@@ -140,7 +140,7 @@ export const useFileOperations = (refreshFiles: () => Promise<void>): UseFileOpe
       };
 
       if (parentId && parentId !== 'root') {
-        createParams.parent_id = parseInt(parentId);
+        createParams.parent_id = parentId;
       }
 
       const response = await DocumentApi.CreateDocument(createParams);

@@ -23,6 +23,7 @@
 --   dave.solo@nullfellows.dev       | —         | —        (member of NO org)
 --
 -- All four users sign in locally with password: password123
+-- (The demo user in section 7 signs in with password: intent-demo-2026.)
 --
 -- UUID scheme (fixed, grep-friendly):
 --   0000…000N  auth.users            (1 alice, 2 bob, 3 carol, 4 dave)
@@ -33,6 +34,12 @@
 --   4000…000N  documents             (1 alpha, 2 beta)
 --   5000…000N  document_versions     (1 alpha, 2 beta)
 --   6000…000N  auth.identities       (1..4, matching users)
+--
+-- Demo access additions (section 7): a fifth user demo@nullfellows.dev
+-- (password intent-demo-2026) owning a separate "Demo Workspace" org. The org,
+-- project, and document use the SAME fixed UUIDs as scripts/seed-demo-hosted.mjs
+-- (1111…/2222…/3333…) so the one-click demo button lands on the same studio
+-- path locally and hosted.
 -- ============================================================================
 
 begin;
@@ -333,6 +340,124 @@ values
     '{"schema_version": 1, "type": "doc", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Seed snapshot for Org Beta welcome document."}]}]}'::jsonb,
     'seedseedseedseedseedseedseedseedseedseedseedseedseedseedseed0002',
     '00000000-0000-4000-8000-000000000003',
+    '2026-07-18T00:00:00Z'
+  )
+on conflict do nothing;
+
+-- ----------------------------------------------------------------------------
+-- 7. Demo access (mirrors scripts/seed-demo-hosted.mjs for the hosted stack)
+-- ----------------------------------------------------------------------------
+-- Shared demo account behind the auth page's "Try the demo instantly" button.
+-- Same fixed bcrypt salt as the other users (deterministic local seed with a
+-- public throwaway password). Org/project/document UUIDs are intentionally
+-- NOT in the 1000…/3000…/4000… scheme above: they must match the hosted seed
+-- script exactly so /studio/33333333-3333-4333-8333-333333333333 works in
+-- both environments.
+
+insert into auth.users (
+  instance_id,
+  id,
+  aud,
+  role,
+  email,
+  encrypted_password,
+  email_confirmed_at,
+  raw_app_meta_data,
+  raw_user_meta_data,
+  created_at,
+  updated_at,
+  confirmation_token,
+  recovery_token,
+  email_change_token_new,
+  email_change
+)
+values
+  (
+    '00000000-0000-0000-0000-000000000000',
+    '00000000-0000-4000-8000-00000000000d',
+    'authenticated',
+    'authenticated',
+    'demo@nullfellows.dev',
+    extensions.crypt('intent-demo-2026', '$2a$10$abcdefghijklmnopqrstuv'),
+    '2026-07-18T00:00:00Z',
+    '{"provider": "email", "providers": ["email"]}'::jsonb,
+    '{"full_name": "Demo User"}'::jsonb,
+    '2026-07-18T00:00:00Z',
+    '2026-07-18T00:00:00Z',
+    '', '', '', ''
+  )
+on conflict do nothing;
+
+insert into auth.identities (
+  id,
+  user_id,
+  identity_data,
+  provider,
+  provider_id,
+  last_sign_in_at,
+  created_at,
+  updated_at
+)
+values
+  (
+    '60000000-0000-4000-8000-00000000000d',
+    '00000000-0000-4000-8000-00000000000d',
+    '{"sub": "00000000-0000-4000-8000-00000000000d", "email": "demo@nullfellows.dev", "email_verified": true, "phone_verified": false}'::jsonb,
+    'email',
+    '00000000-0000-4000-8000-00000000000d',
+    '2026-07-18T00:00:00Z',
+    '2026-07-18T00:00:00Z',
+    '2026-07-18T00:00:00Z'
+  )
+on conflict do nothing;
+
+insert into public.organizations (id, name, slug, settings, created_at, updated_at)
+values
+  (
+    '11111111-1111-4111-8111-111111111111',
+    'Demo Workspace',
+    'demo-workspace',
+    '{"schema_version": 1}'::jsonb,
+    '2026-07-18T00:00:00Z',
+    '2026-07-18T00:00:00Z'
+  )
+on conflict do nothing;
+
+insert into public.organization_members (id, organization_id, user_id, role, invited_by, created_at, updated_at)
+values
+  ( -- demo user: owner of Demo Workspace
+    '20000000-0000-4000-8000-00000000000d',
+    '11111111-1111-4111-8111-111111111111',
+    '00000000-0000-4000-8000-00000000000d',
+    'owner',
+    null,
+    '2026-07-18T00:00:00Z',
+    '2026-07-18T00:00:00Z'
+  )
+on conflict do nothing;
+
+insert into public.projects (id, organization_id, name, description, settings, created_at, updated_at)
+values
+  (
+    '22222222-2222-4222-8222-222222222222',
+    '11111111-1111-4111-8111-111111111111',
+    'Demo Project',
+    'Shared demo workspace project (same fixed UUIDs as scripts/seed-demo-hosted.mjs).',
+    '{"schema_version": 1}'::jsonb,
+    '2026-07-18T00:00:00Z',
+    '2026-07-18T00:00:00Z'
+  )
+on conflict do nothing;
+
+insert into public.documents (id, project_id, organization_id, title, kind, created_at, updated_at)
+values
+  (
+    '33333333-3333-4333-8333-333333333333',
+    '22222222-2222-4222-8222-222222222222',
+    '11111111-1111-4111-8111-111111111111',
+    'The Case for Legible AI Writing',
+    'document',
+    '2026-07-18T00:00:00Z',
     '2026-07-18T00:00:00Z'
   )
 on conflict do nothing;

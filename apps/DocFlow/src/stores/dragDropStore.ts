@@ -82,14 +82,11 @@ export const useDragDropStore = create<DragDropState>((set, get) => ({
     // 先更新UI状态
     setFiles(newItems);
 
-    // 调用API移动文档
+    // 调用API移动文档（ids 现为 uuid 字符串，不再做 Number() 转换）
     try {
-      const documentIds = [Number(activeId)];
-      const targetFolderId = parentId ? Number(parentId) : 0;
-
       await DocumentApi.MoveDocuments({
-        document_ids: documentIds,
-        target_folder_id: targetFolderId,
+        document_ids: [activeId],
+        target_folder_id: parentId ?? null,
       });
 
       // API调用成功后刷新文件列表以确保数据同步

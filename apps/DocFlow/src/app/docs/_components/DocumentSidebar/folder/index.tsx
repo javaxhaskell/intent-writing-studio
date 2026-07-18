@@ -133,7 +133,8 @@ const Folder = ({ onFileSelect }: FileExplorerProps) => {
   useEffect(() => {
     if (documentGroups.length === 0) return;
 
-    const match = pathname.match(/^\/docs\/(\d+)$/);
+    // 文档 id 现为 Supabase uuid 字符串（不再是纯数字），匹配任意单段 room id
+    const match = pathname.match(/^\/docs\/([^/]+)$/);
 
     if (match) {
       const fileId = match[1];

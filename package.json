@@ -21,6 +21,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,mjs}\"",
     "format:ci": "prettier --check \"**/*.{ts,tsx,mjs}\"",
     "test": "turbo run test",
+    "test:e2e": "pnpm --dir e2e test",
     "clean": "turbo run clean && rm -rf node_modules .turbo",
     "prepare": "husky",
     "commit": "git-cz"

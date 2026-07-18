@@ -52,11 +52,18 @@ jobs:
         with:
           version: latest
 
-      - name: Start local database and apply migrations
-        run: supabase db start
+      - name: Start local stack and apply migrations + seed
+        # Full stack (not just `supabase db start`): the REST-level isolation
+        # suite needs GoTrue (password sign-in) and PostgREST (Data API).
+        run: supabase start
 
       - name: Run pgTAP suite (RLS, tenancy isolation, role gates)
         run: supabase test db
+
+      - name: REST-level tenant isolation (user JWTs + anon key only)
+        # Proves RLS through the real GoTrue/PostgREST stack with the seeded
+        # users; defaults target the local demo stack started above.
+        run: node scripts/isolation-check.mjs
 
       - name: Generated types drift check
         # Format with the repo's pinned prettier version + config so the diff
