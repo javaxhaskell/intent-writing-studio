@@ -569,9 +569,6 @@ importers:
       tinykeys:
         specifier: ^3.0.0
         version: 3.0.0
-      tiptap-extension-export-docx:
-        specifier: ^0.0.9
-        version: 0.0.9
       ua-parser-js:
         specifier: ^2.0.4
         version: 2.0.8
@@ -7409,9 +7406,6 @@ packages:
     resolution: {integrity: sha512-gXah6aZrcUxjWg2zR2MwouP2eHlCBzdV4pygudehaKXSGW4v2AsRQUK+lwwXhii6KFZcunEnmSUoYp5CXibxtA==}
     engines: {node: '>= 0.4'}
 
-  ofetch@1.4.1:
-    resolution: {integrity: sha512-QZj2DfGplQAr2oj9KzceK9Hwz6Whxazmn85yYeVuS3u9XTMOGMRx0kO95MQ+vLsj/S/NwBDMMLU5hpxvI6Tklw==}
-
   ofetch@1.5.1:
     resolution: {integrity: sha512-2W4oUZlVaqAPAil6FUg/difl6YhqhUR7x2eZY4bQCko22UXg3hptq9KLQdqFClV+Wu85UX7hNtdGTngi/1BxcA==}
 
@@ -8438,10 +8432,6 @@ packages:
   tinyspy@4.0.4:
     resolution: {integrity: sha512-azl+t0z7pw/z958Gy9svOTuzqIk6xq+NSheJzn5MMWtWTFywIacg2wUlzKFGtt3cthx0r2SxMK0yzJOR0IES7Q==}
     engines: {node: '>=14.0.0'}
-
-  tiptap-extension-export-docx@0.0.9:
-    resolution: {integrity: sha512-TT/elRu+w4Z+2zuU4Q7ttG9z3UcEMafYhboI529QXxzfdBbA4vbNml1pf2R0Ln1bURf7k1bXcYV289oqSQMXzQ==}
-    deprecated: This package has been renamed to @docen/export-docx. Please use @docen/export-docx instead.
 
   tmp@0.0.33:
     resolution: {integrity: sha512-jRCJlojKnZ3addtTOjdIqoRuPEKBvNXcGYqzO6zWZX8KfKEpnGY5jfggJQ3EjKuu8D4bJRr0y+cYJFmYbImXGw==}
@@ -16798,12 +16788,6 @@ snapshots:
       define-properties: 1.2.1
       es-object-atoms: 1.1.1
 
-  ofetch@1.4.1:
-    dependencies:
-      destr: 2.0.5
-      node-fetch-native: 1.6.7
-      ufo: 1.6.3
-
   ofetch@1.5.1:
     dependencies:
       destr: 2.0.5
@@ -18018,12 +18002,6 @@ snapshots:
   tinyrainbow@2.0.0: {}
 
   tinyspy@4.0.4: {}
-
-  tiptap-extension-export-docx@0.0.9:
-    dependencies:
-      docx: 9.5.1
-      image-meta: 0.2.2
-      ofetch: 1.4.1
 
   tmp@0.0.33:
     dependencies:
