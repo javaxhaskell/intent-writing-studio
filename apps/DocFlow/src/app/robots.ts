@@ -14,6 +14,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/api/', '/dashboard/', '/auth/'],
       },
     ],
-    sitemap: 'https://www.codecrack.cn/sitemap.xml',
+    sitemap: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/sitemap.xml`,
   };
 }

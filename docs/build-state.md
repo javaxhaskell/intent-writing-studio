@@ -5,9 +5,9 @@
 
 ## Current position
 
-- **Milestone**: 0 — Discovery and executable baseline (in progress)
-- **Branch**: `feat/m0-discovery`
-- **PR**: #1 (draft) — https://github.com/javaxhaskell/intent-writing-studio/pull/1
+- **Milestone**: 1 — Supabase foundation and secure tenancy (in progress). **Milestone 0: COMPLETE** — PR #1 merged 2026-07-18 17:47 UTC, CI green, Greptile round 2 clean (round-1 findings fixed: IR-2026-002 incident entry, max-warnings=0).
+- **Branch**: `feat/m1-supabase-foundation`
+- **PR**: not yet opened
 - **Date**: 2026-07-18
 
 ## Credential preflight (2026-07-18) — PASSED
@@ -47,8 +47,11 @@ rotation is queued for Milestone 6 hardening.
 
 ## Next actions
 
-1. Run Greptile review loop on PR #1 to zero actionable findings; confirm new CI green.
-2. Milestone 1 kickoff per architecture first-slice recommendation: environment hygiene commit (replace tracked codecrack.cn env files, Sentry DSN strip), `supabase init` + first migrations (orgs/members/projects/documents + RLS), auth bootstrap replacing `proxy.ts` cookie gate.
+1. Open M1 slice-1 PR (schema + hygiene + DB CI) → Greptile loop → merge.
+2. M1 slice 2 — auth bootstrap: Supabase Auth (magic link + GitHub), replace proxy.ts cookie gate and the /documents/:id/permissions dependency, session handling in the data layer.
+3. M1 remainder: Supabase GitHub integration + preview branching (needs Pro plan check), two-org browser-level isolation verification (M1 done-criterion).
+
+Done so far on this branch: supabase scaffolding + link; tenancy migration 20260718000001 + grants 20260718000002 with RLS enabled+forced; deterministic seed; **177/177 pgTAP tests pass locally** (db reset clean); generated DB types committed; env hygiene — all runtime coupling to upstream's live infra severed (env files, Sentry DSN/PII, SEO URLs, workflow websocket); CI gains a database job (migrations + pgTAP + types-drift).
 
 ## Open risks (full ranked list in docs/architecture.md)
 

@@ -16,7 +16,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://www.codecrack.cn'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
   title: 'DocFlow',
   description:
     'DocFlow 是一个基于 Tiptap 构建的现代化文档编辑器，支持实时协作、智能AI助手和丰富的内容格式，为团队提供高效的文档创作体验。',
@@ -86,14 +86,14 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'zh_CN',
-    url: 'https://www.codecrack.cn',
+    url: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
     title: 'DocFlow',
     description:
       'DocFlow 是一个基于 Tiptap 构建的现代化文档编辑器，支持实时协作、智能AI助手和丰富的内容格式，为团队提供高效的文档创作体验。',
     siteName: 'DocFlow',
   },
   alternates: {
-    canonical: 'https://www.codecrack.cn',
+    canonical: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
   },
   verification: {
     google: 'BT9sufowSh1mhZnmenGdqPdVxSLdMrQ4Il6sQH62qG0',
@@ -112,8 +112,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="theme-color" content="#ffffff" />
-        <link rel="preconnect" href="https://www.codecrack.cn" />
-        <link rel="dns-prefetch" href="https://www.codecrack.cn" />
       </head>
       <body
         className="flex flex-col h-full antialiased"

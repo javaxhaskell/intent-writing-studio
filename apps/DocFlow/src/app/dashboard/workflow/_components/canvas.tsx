@@ -130,7 +130,7 @@ export default function Canvas({
   useEffect(() => {
     const doc = new Y.Doc();
     const hocusProvider = new HocuspocusProvider({
-      url: 'wss://flow.codecrack.cn',
+      url: process.env.NEXT_PUBLIC_WORKFLOW_WEBSOCKET_URL || 'ws://localhost:8081',
       name: 'flow-room',
       document: doc,
       onConnect: () => {

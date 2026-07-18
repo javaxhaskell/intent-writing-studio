@@ -40,3 +40,28 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+  database:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start local database and apply migrations
+        run: supabase db start
+
+      - name: Run pgTAP suite (RLS, tenancy isolation, role gates)
+        run: supabase test db
+
+      - name: Generated types drift check
+        # Format with the repo's pinned prettier version + config so the diff
+        # compares content, not formatter-version quirks.
+        run: |
+          supabase gen types typescript --db-url "postgresql://postgres:postgres@127.0.0.1:54322/postgres" > /tmp/database.gen.ts
+          npx -y prettier@3.8.1 --config .prettierrc --write /tmp/database.gen.ts
+          diff -u apps/DocFlow/src/types/database.ts /tmp/database.gen.ts
