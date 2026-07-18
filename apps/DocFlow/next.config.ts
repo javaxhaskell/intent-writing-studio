@@ -81,8 +81,8 @@ const withAnalyzer = withBundleAnalyzer({
 });
 
 export default withSentryConfig(withAnalyzer(nextConfig), {
-  org: 'docflow-0c',
-  project: 'javascript-nextjs',
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
   silent: !process.env.CI,
   widenClientFileUpload: true,
 });

@@ -4,10 +4,10 @@
 
 import * as Sentry from '@sentry/nextjs';
 
-// 只在生产环境启用 Sentry
-if (process.env.NODE_ENV === 'production') {
+// Enabled only in production AND when a DSN is provided via environment.
+if (process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_SENTRY_DSN) {
   Sentry.init({
-    dsn: 'https://ff26f22bed7e5dab2e5a58317a23a6f5@o4510198572318720.ingest.us.sentry.io/4510198573629440',
+    dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
     // 降低采样率，避免 429 错误
     tracesSampleRate: 0.1,
