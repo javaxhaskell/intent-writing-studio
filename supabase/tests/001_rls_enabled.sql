@@ -42,9 +42,13 @@ select tables_are(
     'projects',
     'documents',
     'document_versions',
-    'source_materials'
+    'source_materials',
+    'pathway_sets',
+    'pathways',
+    'intent_nodes',
+    'doc_blocks'
   ],
-  'public contains exactly the six Milestone 1 tenancy tables'
+  'public contains exactly the expected tables (six tenancy + four demo studio)'
 );
 
 -- ---------------------------------------------------------------------------

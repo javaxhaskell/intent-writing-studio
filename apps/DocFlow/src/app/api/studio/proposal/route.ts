@@ -1,5 +1,3 @@
-import { ProposalDecisionRequestSchema } from '@/lib/studio/contracts';
-
 import {
   getAuthContext,
   handleRouteError,
@@ -8,7 +6,9 @@ import {
   toBlockRow,
 } from '../_lib/helpers';
 
-export const maxDuration = 60;
+import { ProposalDecisionRequestSchema } from '@/lib/studio/contracts';
+
+export const maxDuration = 300;
 
 export async function POST(req: Request) {
   try {

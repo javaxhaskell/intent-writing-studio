@@ -1,13 +1,5 @@
 import { randomUUID } from 'crypto';
-
 import { z } from 'zod';
-
-import {
-  DraftModelOutputSchema,
-  GenerateDraftRequestSchema,
-  PathwayPayloadSchema,
-} from '@/lib/studio/contracts';
-import { callClaudeJson } from '@/lib/studio/gateway';
 
 import {
   getAuthContext,
@@ -19,7 +11,14 @@ import {
   toIntentRow,
 } from '../_lib/helpers';
 
-export const maxDuration = 60;
+import {
+  DraftModelOutputSchema,
+  GenerateDraftRequestSchema,
+  PathwayPayloadSchema,
+} from '@/lib/studio/contracts';
+import { callClaudeJson } from '@/lib/studio/gateway';
+
+export const maxDuration = 300;
 
 type DraftIntent = z.infer<typeof DraftModelOutputSchema>['intents'][number];
 

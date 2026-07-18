@@ -3,12 +3,12 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, Check } from 'lucide-react';
 
+import { ProgressPanel } from './ProgressPanel';
+import type { PathwayRow } from './useStudio';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/utils';
-
-import { ProgressPanel } from './ProgressPanel';
-import type { PathwayRow } from './useStudio';
 
 function DetailList({ label, items }: { label: string; items: string[] }) {
   if (items.length === 0) return null;
@@ -44,12 +44,14 @@ function PathwayCard({
         pathway.selected && 'ring-2 ring-primary',
       )}
     >
-      <div className="flex items-start justify-between gap-3">
-        <h3 className="text-base font-semibold leading-snug">{payload.title}</h3>
-        <Badge variant="secondary" className="shrink-0 font-normal">
-          {payload.tone}
-        </Badge>
-      </div>
+      <h3 className="text-base font-semibold leading-snug">{payload.title}</h3>
+
+      <Badge
+        variant="secondary"
+        className="mt-2 max-w-full self-start whitespace-normal text-left font-normal"
+      >
+        {payload.tone}
+      </Badge>
 
       <p className="mt-2 text-sm text-muted-foreground">{payload.oneSentenceApproach}</p>
 
@@ -134,8 +136,8 @@ export function PathwayGrid({
       <div className="mb-6">
         <h2 className="text-lg font-semibold tracking-tight">Choose a pathway</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          {pathways.length} distinct strategies for your brief. Pick the one whose reasoning you
-          buy — the draft inherits its thesis, structure and tone.
+          {pathways.length} distinct strategies for your brief. Pick the one whose reasoning you buy
+          — the draft inherits its thesis, structure and tone.
         </p>
       </div>
       <div className="grid gap-4 md:grid-cols-2">

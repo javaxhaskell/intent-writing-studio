@@ -1,8 +1,8 @@
 import { notFound, redirect } from 'next/navigation';
 
-import { createClient } from '@/lib/supabase/server';
-
 import { StudioClient } from './_components/StudioClient';
+
+import { createClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 

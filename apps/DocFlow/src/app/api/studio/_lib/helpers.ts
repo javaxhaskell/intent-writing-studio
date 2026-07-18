@@ -2,7 +2,6 @@ import { createHash } from 'crypto';
 
 import type { Database } from '@/types/database';
 import type { DocBlockRow, IntentNodeRow, IntentKind } from '@/lib/studio/contracts';
-
 import { GatewayError } from '@/lib/studio/gateway';
 import { createClient } from '@/lib/supabase/server';
 

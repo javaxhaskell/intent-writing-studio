@@ -3,10 +3,10 @@
 import { useState } from 'react';
 import { Sparkles } from 'lucide-react';
 
+import { ProgressPanel } from './ProgressPanel';
+
 import { BriefSchema, type Brief } from '@/lib/studio/contracts';
 import { Button } from '@/components/ui/button';
-
-import { ProgressPanel } from './ProgressPanel';
 
 const FIELDS: Array<{
   key: keyof Brief;
@@ -18,7 +18,8 @@ const FIELDS: Array<{
   {
     key: 'goal',
     label: 'Goal',
-    placeholder: 'What should this piece achieve? e.g. Convince engineering leaders to adopt trunk-based development.',
+    placeholder:
+      'What should this piece achieve? e.g. Convince engineering leaders to adopt trunk-based development.',
     required: true,
     rows: 3,
   },
@@ -91,8 +92,8 @@ export function BriefForm({
       <div className="mb-6">
         <h2 className="text-lg font-semibold tracking-tight">Start with a brief</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Describe what you want to write. The studio will explore several distinct pathways
-          before a single word of the draft is generated.
+          Describe what you want to write. The studio will explore several distinct pathways before
+          a single word of the draft is generated.
         </p>
       </div>
 

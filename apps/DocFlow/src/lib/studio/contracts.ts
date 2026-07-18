@@ -75,6 +75,7 @@ export const DraftModelOutputSchema = z
   })
   .superRefine((val, ctx) => {
     const refs = new Set(val.intents.map((i) => i.ref));
+
     if (refs.size !== val.intents.length) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'duplicate intent refs' });
     }

@@ -1,6 +1,3 @@
-import { RegenerateRequestSchema, RegenModelOutputSchema } from '@/lib/studio/contracts';
-import { callClaudeJson } from '@/lib/studio/gateway';
-
 import {
   getAuthContext,
   getDocumentForUser,
@@ -11,7 +8,10 @@ import {
   type SupabaseServerClient,
 } from '../_lib/helpers';
 
-export const maxDuration = 60;
+import { RegenerateRequestSchema, RegenModelOutputSchema } from '@/lib/studio/contracts';
+import { callClaudeJson } from '@/lib/studio/gateway';
+
+export const maxDuration = 300;
 
 const SYSTEM_PROMPT = [
   'You are a precise editor. Some paragraphs of a draft are stale because the',

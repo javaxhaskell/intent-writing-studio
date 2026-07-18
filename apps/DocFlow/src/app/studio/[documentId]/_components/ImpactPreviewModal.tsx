@@ -76,7 +76,9 @@ export function ImpactPreviewModal({
                 <li
                   key={block.id}
                   className={
-                    block.locked ? 'rounded-md border px-3 py-2 opacity-60' : 'rounded-md border px-3 py-2'
+                    block.locked
+                      ? 'rounded-md border px-3 py-2 opacity-60'
+                      : 'rounded-md border px-3 py-2'
                   }
                 >
                   <p className="line-clamp-2 text-sm text-muted-foreground">{block.excerpt}</p>

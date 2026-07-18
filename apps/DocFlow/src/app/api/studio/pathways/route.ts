@@ -1,5 +1,6 @@
-import type { Json } from '@/types/database';
+import { getAuthContext, getDocumentForUser, handleRouteError, jsonError } from '../_lib/helpers';
 
+import type { Json } from '@/types/database';
 import {
   GeneratePathwaysRequestSchema,
   PathwaySetModelOutputSchema,
@@ -7,9 +8,7 @@ import {
 } from '@/lib/studio/contracts';
 import { callClaudeJson, getModelId } from '@/lib/studio/gateway';
 
-import { getAuthContext, getDocumentForUser, handleRouteError, jsonError } from '../_lib/helpers';
-
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 const SYSTEM_PROMPT = [
   'You are a senior writing strategist. Given a writing brief, you propose',

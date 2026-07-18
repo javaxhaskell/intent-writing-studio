@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { getAuthContext, handleRouteError, jsonError, toBlockRow } from '../_lib/helpers';
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 const BlockLockRequestSchema = z.object({
   blockId: z.string().uuid(),

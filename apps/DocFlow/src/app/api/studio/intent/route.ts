@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
-import { UpdateIntentRequestSchema, type ImpactPreview } from '@/lib/studio/contracts';
-
 import { getAuthContext, handleRouteError, jsonError } from '../_lib/helpers';
 
-export const maxDuration = 60;
+import { UpdateIntentRequestSchema, type ImpactPreview } from '@/lib/studio/contracts';
+
+export const maxDuration = 300;
 
 const BodySchema = z.object({
   ...UpdateIntentRequestSchema.shape,
@@ -85,6 +85,7 @@ export async function POST(req: Request) {
         }
 
         seen.add(child.id);
+
         const parentTitle = currentId === intentId ? title : (titleById.get(currentId) ?? 'parent');
 
         affectedIntents.push({

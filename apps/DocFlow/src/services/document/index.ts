@@ -127,7 +127,9 @@ export const DocumentApi = {
    * `personal` and `shared` stay empty stubs: there are no org-less documents
    * and no share tables yet (awaiting their milestones).
    */
-  GetDocument: async (errorHandler?: ErrorHandler): Promise<RequestResult<GetDocumentsResponse>> => {
+  GetDocument: async (
+    errorHandler?: ErrorHandler,
+  ): Promise<RequestResult<GetDocumentsResponse>> => {
     const supabase = createClient();
 
     const [orgsResult, docsResult] = await Promise.all([
@@ -371,9 +373,8 @@ export const DocumentApi = {
     Promise.resolve(fail('文档下载暂未开放（等待导出功能）', errorHandler)),
 
   /** Stub — awaiting share-links milestone; dead-code consumer only. */
-  GetSharedDocuments: (
-    _errorHandler?: ErrorHandler,
-  ): Promise<RequestResult<SharedDocumentItem[]>> => Promise.resolve(ok<SharedDocumentItem[]>([])),
+  GetSharedDocuments: (): Promise<RequestResult<SharedDocumentItem[]>> =>
+    Promise.resolve(ok<SharedDocumentItem[]>([])),
 
   /** Stub — awaiting share-links milestone (no share tables yet). */
   AccessSharedDocument: (
@@ -394,10 +395,7 @@ export const DocumentApi = {
     Promise.resolve(fail('移动文档暂未开放（等待目录树数据模型）', errorHandler)),
 
   /** Stub — awaiting recents (last_viewed) milestone; zero live consumers. */
-  GetLatestDocuments: (
-    _limit: number,
-    _errorHandler?: ErrorHandler,
-  ): Promise<RequestResult<LatestDocumentItem[]>> =>
+  GetLatestDocuments: (): Promise<RequestResult<LatestDocumentItem[]>> =>
     Promise.resolve(ok<LatestDocumentItem[]>([])),
 };
 

@@ -1,9 +1,9 @@
 'use client';
 
+import { KIND_LABELS } from './intent-utils';
+
 import type { IntentNodeRow } from '@/lib/studio/contracts';
 import { cn } from '@/utils';
-
-import { KIND_LABELS } from './intent-utils';
 
 function OutlineNode({
   intent,

@@ -3,14 +3,14 @@
 import { useState } from 'react';
 import { ChevronRight, Lock, LockOpen, Route } from 'lucide-react';
 
+import { ImpactPreviewModal } from './ImpactPreviewModal';
+import { ancestorChain, KIND_BADGE_CLASSES, KIND_LABELS } from './intent-utils';
+import type { PathwayRow } from './useStudio';
+
 import type { DocBlockRow, ImpactPreview, IntentNodeRow } from '@/lib/studio/contracts';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/utils';
-
-import { ImpactPreviewModal } from './ImpactPreviewModal';
-import { ancestorChain, KIND_BADGE_CLASSES, KIND_LABELS } from './intent-utils';
-import type { PathwayRow } from './useStudio';
 
 export function IntentLens({
   block,
@@ -154,8 +154,8 @@ export function IntentLens({
       <div className="border-t pt-4">
         <p className="text-sm font-semibold">Edit intent</p>
         <p className="mt-0.5 text-xs text-muted-foreground">
-          Change what this part of the document is trying to do — then preview exactly which
-          blocks are affected before anything regenerates.
+          Change what this part of the document is trying to do — then preview exactly which blocks
+          are affected before anything regenerates.
         </p>
 
         <label htmlFor="intent-title" className="mt-3 block text-xs font-medium">
