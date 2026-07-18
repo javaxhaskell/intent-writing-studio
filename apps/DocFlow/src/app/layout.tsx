@@ -6,7 +6,6 @@ import '@/styles/index.css';
 import { inter } from './fonts';
 
 import { QueryProvider } from '@/providers/QueryProvider';
-import { AuthProvider } from '@/providers/AuthProvider';
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -119,19 +118,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         suppressHydrationWarning
       >
         <QueryProvider>
-          <AuthProvider>
-            <main className="h-full">{children}</main>
-            <Toaster
-              position="bottom-right"
-              toastOptions={{
-                duration: 4000,
-                style: {
-                  fontFamily:
-                    'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "Helvetica Neue", Arial, sans-serif',
-                },
-              }}
-            />
-          </AuthProvider>
+          <main className="h-full">{children}</main>
+          <Toaster
+            position="bottom-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                fontFamily:
+                  'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "Helvetica Neue", Arial, sans-serif',
+              },
+            }}
+          />
         </QueryProvider>
       </body>
     </html>

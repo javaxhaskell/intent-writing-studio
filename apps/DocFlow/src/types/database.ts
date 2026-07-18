@@ -307,6 +307,14 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      get_document_access: {
+        Args: { p_document_id: string };
+        Returns: {
+          can_comment: boolean;
+          can_edit: boolean;
+          role: string;
+        }[];
+      };
       soft_delete_organization: {
         Args: { org_id: string };
         Returns: {

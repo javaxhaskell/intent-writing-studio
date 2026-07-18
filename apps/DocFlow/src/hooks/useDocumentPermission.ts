@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import * as Y from 'yjs';
 
-import DocumentApi from '@/services/document';
+import { getDocumentAccess } from '@/services/document/access';
 import { DocumentPermissionData } from '@/services/document/type';
 import { getCursorColorByUserId } from '@/utils';
 
@@ -36,7 +36,11 @@ export function useDocumentPermission(documentId: string): UseDocumentPermission
       setIsLoadingPermission(true);
       setPermissionError(null);
 
-      const { data, error } = await DocumentApi.GetDocumentPermissions(Number(documentId));
+      // Supabase RPC bootstrap (public.get_document_access) — replaces the
+      // legacy HTTP permission endpoint. The room param is the document uuid,
+      // so no numeric coercion happens anymore. serverReadOnly from the
+      // Hocuspocus `server:permission` message stays authoritative at runtime.
+      const { data: permData, error } = await getDocumentAccess(documentId);
 
       if (error) {
         setPermissionError(error);
@@ -45,14 +49,13 @@ export function useDocumentPermission(documentId: string): UseDocumentPermission
         return;
       }
 
-      if (!data?.data) {
+      if (!permData) {
         setPermissionError('无法获取文档权限信息');
         setIsLoadingPermission(false);
 
         return;
       }
 
-      const permData = data.data;
       setPermissionData(permData);
       setIsLoadingPermission(false);
 

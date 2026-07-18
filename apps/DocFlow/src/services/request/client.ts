@@ -1,7 +1,11 @@
 /**
  * 客户端请求模块
- * 完整版本，包含：token 认证、自动刷新、SSE、Sentry 上报、重试机制
+ * 完整版本，包含：token 认证、SSE、Sentry 上报、重试机制
  * 仅用于浏览器环境
+ *
+ * 注意：登录会话由 Supabase (@supabase/ssr) 统一管理。本模块不再刷新或写入
+ * 任何 legacy auth cookie（auth_token / refresh_token）——401 时仅清理残留
+ * 凭证，绝不重新铸造。
  */
 
 'use client';
@@ -16,17 +20,15 @@ import type {
   ApiResponse,
   RequestResult,
   ErrorHandler,
-  QueuedRequest,
   RequestOptions,
   RequestParams,
   StreamResponseConfig,
 } from './types';
 import { RequestError } from './types';
 
-import { getCookie, saveAuthData, clearAuthData } from '@/utils/auth/cookie';
+import { getCookie, clearAuthData } from '@/utils/auth/cookie';
 import { HTTP_METHODS, HTTP_CREDENTIALS, HTTP_STATUS_MESSAGES } from '@/utils/constants/http';
 import { ROUTES } from '@/utils/constants/routes';
-import type { TokenRefreshResponse } from '@/types/auth';
 
 // 在开发环境禁止 Sentry 上报和 breadcrumb 记录
 const isProduction = process.env.NODE_ENV === 'production';
@@ -69,15 +71,6 @@ class ClientRequest {
   private defaultTimeout: number;
   private defaultRetries: number;
   private defaultRetryDelay: number;
-
-  // 刷新尝试限制，避免潜在循环
-  private maxRefreshAttempts = 2;
-  private currentRefreshAttempts = 0;
-
-  // Token 刷新相关
-  private isRefreshing = false;
-  private refreshTokenPromise: Promise<string> | null = null;
-  private failedQueue: QueuedRequest[] = [];
 
   constructor(baseURL: string, options?: RequestOptions) {
     this.baseURL = baseURL;
@@ -123,146 +116,6 @@ class ClientRequest {
     loginUrl.searchParams.set('redirect_to', pathname + search);
 
     window.location.href = loginUrl.toString();
-  }
-
-  /**
-   * 刷新访问令牌
-   */
-  private async refreshAccessToken(): Promise<string> {
-    const refreshToken = getCookie('refresh_token');
-
-    if (!refreshToken) {
-      throw new RequestError('未找到刷新令牌，请重新登录', '', 401, 'Unauthorized');
-    }
-
-    try {
-      const refreshUrl = this.baseURL + '/api/v1/auth/refresh';
-
-      addSentryBreadcrumb({
-        category: 'auth',
-        message: 'Refreshing access token',
-        level: 'info',
-      });
-
-      const csrfToken = getCookie('csrf_token');
-      const response = await fetch(refreshUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
-        },
-        body: JSON.stringify({ refresh_token: refreshToken }),
-      });
-
-      if (!response.ok) {
-        this.handleAuthFailure();
-        throw new RequestError(
-          '刷新令牌失败，请重新登录',
-          refreshUrl,
-          response.status,
-          response.statusText,
-        );
-      }
-
-      const result = await response.json();
-
-      if (
-        result.code !== undefined &&
-        result.code !== 0 &&
-        (result.code < 200 || result.code >= 300)
-      ) {
-        this.handleAuthFailure();
-        throw new RequestError(result.message, refreshUrl, 401, 'Unauthorized', result);
-      }
-
-      const tokenData: TokenRefreshResponse = result.data;
-
-      saveAuthData({
-        token: tokenData.token,
-        refresh_token: tokenData.refresh_token,
-        expires_in: tokenData.expires_in,
-        refresh_expires_in: tokenData.refresh_expires_in,
-      });
-
-      addSentryBreadcrumb({
-        category: 'auth',
-        message: 'Token refreshed successfully',
-        level: 'info',
-      });
-
-      return tokenData.token;
-    } catch (error) {
-      this.handleAuthFailure();
-
-      addSentryBreadcrumb({
-        category: 'auth',
-        message: 'Token refresh failed',
-        level: 'error',
-      });
-
-      throw error;
-    }
-  }
-
-  /**
-   * 处理 token 刷新和请求队列
-   */
-  private async handleTokenRefresh(): Promise<string> {
-    if (this.isRefreshing && this.refreshTokenPromise) {
-      return this.refreshTokenPromise;
-    }
-
-    if (this.currentRefreshAttempts >= this.maxRefreshAttempts) {
-      throw new RequestError('刷新令牌次数过多，请重新登录', '', 401, 'Unauthorized');
-    }
-
-    this.isRefreshing = true;
-    this.currentRefreshAttempts += 1;
-
-    this.refreshTokenPromise = this.refreshAccessToken()
-      .then((newToken) => {
-        this.isRefreshing = false;
-        this.refreshTokenPromise = null;
-        this.currentRefreshAttempts = 0;
-        this.processQueue(null);
-
-        return newToken;
-      })
-      .catch((error) => {
-        this.isRefreshing = false;
-        this.refreshTokenPromise = null;
-        this.processQueue(error);
-        throw error;
-      });
-
-    return this.refreshTokenPromise;
-  }
-
-  /**
-   * 处理请求队列
-   */
-  private processQueue(error: Error | null) {
-    this.failedQueue.forEach((queuedRequest) => {
-      if (error) {
-        queuedRequest.reject(error);
-      } else {
-        queuedRequest.requestFn().then(queuedRequest.resolve).catch(queuedRequest.reject);
-      }
-    });
-    this.failedQueue = [];
-  }
-
-  /**
-   * 将请求添加到队列
-   */
-  private addRequestToQueue<T>(requestFn: () => Promise<T>): Promise<T> {
-    return new Promise((resolve, reject) => {
-      this.failedQueue.push({
-        resolve: resolve as (value: unknown) => void,
-        reject,
-        requestFn,
-      });
-    });
   }
 
   /**
@@ -391,42 +244,29 @@ class ClientRequest {
   }
 
   /**
-   * 执行请求重试（带 token 刷新支持）
+   * 执行请求重试
+   *
+   * 401 不再触发 legacy token 刷新：会话由 Supabase 管理，这里仅清理可能
+   * 残留的 legacy cookie 后直接抛出。
    */
   private async executeWithRetry<T>(
     requestFn: () => Promise<T>,
     retries: number,
     retryDelay: number,
-    isRetryAfterRefresh: boolean = false,
   ): Promise<T> {
     try {
       return await requestFn();
     } catch (error) {
-      // 处理 401 错误 - token 过期
-      if (error instanceof RequestError && error.status === 401 && !isRetryAfterRefresh) {
-        if (!getCookie('refresh_token')) {
-          throw error;
-        }
-
-        try {
-          if (this.isRefreshing) {
-            return this.addRequestToQueue(requestFn);
-          }
-
-          await this.handleTokenRefresh();
-
-          return this.executeWithRetry(requestFn, 0, 0, true);
-        } catch {
-          this.handleAuthFailure();
-          throw error;
-        }
+      if (error instanceof RequestError && error.status === 401) {
+        clearAuthData();
+        throw error;
       }
 
       // 其他错误的重试逻辑
-      if (retries > 0 && !(error instanceof RequestError && error.status === 401)) {
+      if (retries > 0) {
         await new Promise((resolve) => setTimeout(resolve, retryDelay));
 
-        return this.executeWithRetry(requestFn, retries - 1, retryDelay, isRetryAfterRefresh);
+        return this.executeWithRetry(requestFn, retries - 1, retryDelay);
       }
 
       throw error;
@@ -750,7 +590,6 @@ class ClientRequest {
     callback: (response: Response) => void,
   ): Promise<(() => void) | undefined> {
     const controller = new AbortController();
-    let activeController = controller;
     const fullUrl = this.baseURL + url;
 
     addSentryBreadcrumb({
@@ -769,49 +608,15 @@ class ClientRequest {
         withCredentials: params.withCredentials,
       });
 
-      let response = await fetch(req.url, {
+      const response = await fetch(req.url, {
         ...req.options,
-        signal: activeController.signal,
+        signal: controller.signal,
       } as RequestInit);
 
-      // 处理 401 错误，尝试刷新 token
       if (!response.ok) {
-        if (response.status === 401 && getCookie('refresh_token')) {
-          try {
-            if (this.isRefreshing) {
-              await this.refreshTokenPromise;
-            } else {
-              await this.handleTokenRefresh();
-            }
-
-            const retryReq = this.buildRequest({
-              url: fullUrl,
-              method: HTTP_METHODS.POST,
-              params: params.params,
-              headers: params.headers,
-              withCredentials: params.withCredentials,
-            });
-
-            activeController = new AbortController();
-            response = await fetch(retryReq.url, {
-              ...retryReq.options,
-              signal: activeController.signal,
-            } as RequestInit);
-
-            if (response.ok) {
-              addSentryBreadcrumb({
-                category: 'sse',
-                message: `SSE Reconnected after refresh: ${fullUrl}`,
-                level: 'info',
-              });
-
-              callback(response);
-
-              return () => activeController.abort();
-            }
-          } catch {
-            this.handleAuthFailure();
-          }
+        // 会话由 Supabase 管理：401 时清理残留 legacy 凭证，不再刷新重试
+        if (response.status === 401) {
+          this.handleAuthFailure();
         }
 
         let errorMessage = HTTP_STATUS_MESSAGES[response.status] || 'SSE连接失败';
@@ -860,7 +665,7 @@ class ClientRequest {
 
       callback(response);
 
-      return () => activeController.abort();
+      return () => controller.abort();
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {
         // 中止是预期行为
@@ -905,7 +710,6 @@ class ClientRequest {
     onMessage: (data: { data: string }) => void,
   ): Promise<() => void> {
     const controller = new AbortController();
-    let activeController = controller;
     const fullUrl = this.baseURL + url;
 
     addSentryBreadcrumb({
@@ -925,31 +729,19 @@ class ClientRequest {
 
       return fetch(req.url, {
         ...req.options,
-        signal: activeController.signal,
+        signal: controller.signal,
       } as RequestInit);
     };
 
     const open = async (): Promise<void> => {
-      let response = await connect();
+      const response = await connect();
 
       if (!response.ok) {
-        if (response.status === 401 && getCookie('refresh_token')) {
-          try {
-            if (this.isRefreshing) {
-              await this.refreshTokenPromise;
-            } else {
-              await this.handleTokenRefresh();
-            }
-
-            activeController = new AbortController();
-            response = await connect();
-          } catch {
-            this.handleAuthFailure();
-          }
+        // 会话由 Supabase 管理：401 时清理残留 legacy 凭证，不再刷新重试
+        if (response.status === 401) {
+          this.handleAuthFailure();
         }
-      }
 
-      if (!response.ok) {
         throw new RequestError('SSE连接失败', fullUrl, response.status, response.statusText);
       }
 
@@ -1004,7 +796,7 @@ class ClientRequest {
       }
     });
 
-    return () => activeController.abort();
+    return () => controller.abort();
   }
 
   /**
@@ -1023,7 +815,6 @@ class ClientRequest {
     config?: StreamResponseConfig<T>,
   ): Promise<() => void> {
     const controller = new AbortController();
-    let activeController = controller;
     const fullUrl = this.baseURL + url;
 
     addSentryBreadcrumb({
@@ -1042,86 +833,49 @@ class ClientRequest {
         withCredentials: params.withCredentials,
       });
 
-      let response = await fetch(req.url, {
+      const response = await fetch(req.url, {
         ...req.options,
-        signal: activeController.signal,
+        signal: controller.signal,
       } as RequestInit);
 
-      // 处理 401 错误，尝试刷新 token
       if (!response.ok) {
-        if (response.status === 401 && getCookie('refresh_token')) {
-          try {
-            if (this.isRefreshing) {
-              await this.refreshTokenPromise;
-            } else {
-              await this.handleTokenRefresh();
+        let errorMessage = HTTP_STATUS_MESSAGES[response.status] || '流式请求失败';
+        let errorData = null;
+
+        try {
+          const contentType = response.headers.get('content-type');
+
+          if (contentType?.includes('application/json')) {
+            const clonedResponse = response.clone();
+            errorData = await clonedResponse.json();
+
+            if (errorData.message) {
+              errorMessage = errorData.message;
             }
-
-            const retryReq = this.buildRequest({
-              url: fullUrl,
-              method: HTTP_METHODS.POST,
-              params: params.params,
-              headers: params.headers,
-              withCredentials: params.withCredentials,
-            });
-
-            activeController = new AbortController();
-            response = await fetch(retryReq.url, {
-              ...retryReq.options,
-              signal: activeController.signal,
-            } as RequestInit);
-
-            if (response.ok) {
-              addSentryBreadcrumb({
-                category: 'stream',
-                message: `Stream reconnected after refresh: ${fullUrl}`,
-                level: 'info',
-              });
-            }
-          } catch {
-            this.handleAuthFailure();
           }
+        } catch {
+          // 使用默认错误消息
         }
 
-        if (!response.ok) {
-          let errorMessage = HTTP_STATUS_MESSAGES[response.status] || '流式请求失败';
-          let errorData = null;
+        const streamError = new RequestError(
+          errorMessage,
+          fullUrl,
+          response.status,
+          response.statusText,
+          errorData,
+        );
 
-          try {
-            const contentType = response.headers.get('content-type');
+        captureSentryException(streamError, {
+          tags: { errorType: 'StreamError', statusCode: response.status, url: fullUrl },
+          level: 'error',
+        });
 
-            if (contentType?.includes('application/json')) {
-              const clonedResponse = response.clone();
-              errorData = await clonedResponse.json();
-
-              if (errorData.message) {
-                errorMessage = errorData.message;
-              }
-            }
-          } catch {
-            // 使用默认错误消息
-          }
-
-          const streamError = new RequestError(
-            errorMessage,
-            fullUrl,
-            response.status,
-            response.statusText,
-            errorData,
-          );
-
-          captureSentryException(streamError, {
-            tags: { errorType: 'StreamError', statusCode: response.status, url: fullUrl },
-            level: 'error',
-          });
-
-          // 401 without a usable refresh token means the session is gone — redirect to login
-          if (response.status === 401) {
-            this.handleAuthFailure();
-          }
-
-          throw streamError;
+        // 401 means the session is gone — clear legacy cookies / redirect to login
+        if (response.status === 401) {
+          this.handleAuthFailure();
         }
+
+        throw streamError;
       }
 
       // 处理响应头
@@ -1204,7 +958,7 @@ class ClientRequest {
 
       processStream();
 
-      return () => activeController.abort();
+      return () => controller.abort();
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {
         // 中止是预期行为

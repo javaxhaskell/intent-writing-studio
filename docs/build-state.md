@@ -47,9 +47,12 @@ rotation is queued for Milestone 6 hardening.
 
 ## Next actions
 
-1. Open M1 slice-1 PR (schema + hygiene + DB CI) → Greptile loop → merge.
-2. M1 slice 2 — auth bootstrap: Supabase Auth (magic link + GitHub), replace proxy.ts cookie gate and the /documents/:id/permissions dependency, session handling in the data layer.
-3. M1 remainder: Supabase GitHub integration + preview branching (needs Pro plan check), two-org browser-level isolation verification (M1 done-criterion).
+1. M1 slice-2 PR (#3) → Greptile loop → merge. [slice 1 merged as PR #2]
+2. M1 remainder: legacy data-layer surfaces still dark (dashboard lists, uploads, notifications — inventory in architecture.md); Supabase GitHub integration + preview branching (needs Pro plan check); two-org browser-level isolation E2E (M1 done-criterion); GitHub OAuth provider (needs user-created OAuth app).
+
+Slice-2 verified END-TO-END in a real browser (2026-07-18 ~20:07 UTC): magic-link form → Mailpit → PKCE verify → /auth/callback exchange → sb-* cookies → middleware admits /dashboard → document gate passes via get_document_access RPC (page proceeds to collab-connect, awaiting the M3 relay decision). Legacy hand-rolled auth fully removed (XSS-readable token cookies + refresh machinery). 196/196 pgTAP.
+
+Local-dev lessons recorded: (a) hosted project must never serve dev — app env now points at the local stack; hosted creds vaulted OUTSIDE the repo (Next.js reads env from the workspace root too); (b) local GoTrue silently drops @example.com sends → seed uses @nullfellows.dev; (c) local email rate limit raised to 100/hr in config.toml; (d) embedded-browser chunk cache can pin stale env — dev currently runs on port 3001 to sidestep poisoned :3000 cache.
 
 Done so far on this branch: supabase scaffolding + link; tenancy migration 20260718000001 + grants 20260718000002 with RLS enabled+forced; deterministic seed; **177/177 pgTAP tests pass locally** (db reset clean); generated DB types committed; env hygiene — all runtime coupling to upstream's live infra severed (env files, Sentry DSN/PII, SEO URLs, workflow websocket); CI gains a database job (migrations + pgTAP + types-drift).
 
