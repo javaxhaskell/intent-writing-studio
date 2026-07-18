@@ -1,0 +1,82 @@
+{
+  "rules": [
+    {
+      "id": "rls-on-every-table",
+      "rule": "Every migration creating a public Supabase table must enable Row Level Security in the same migration and be accompanied by negative authorization tests (cross-tenant and role-based).",
+      "scope": ["supabase/migrations/**", "supabase/tests/**"],
+      "severity": "high"
+    },
+    {
+      "id": "service-role-server-only",
+      "rule": "The Supabase service-role key (SUPABASE_SERVICE_ROLE_KEY) must never appear in client components, NEXT_PUBLIC_ variables, browser bundles, logs, fixtures, or committed files. Only server-side code may reference it.",
+      "scope": ["**/*"],
+      "severity": "high"
+    },
+    {
+      "id": "validate-model-output",
+      "rule": "All structured output from the foundation model must be validated with a Zod schema before persistence or rendering. Raw model text rendered as rich content must be sanitized.",
+      "scope": ["apps/DocFlow/src/**"],
+      "severity": "high"
+    },
+    {
+      "id": "no-chain-of-thought",
+      "rule": "Never persist, stream to the client, or display hidden model chain-of-thought or provider private reasoning fields. User-facing explanations must come from explicit schema fields (purpose, assumptions, dependencies, trade-offs, evidence, constraints).",
+      "scope": ["apps/DocFlow/src/**"],
+      "severity": "high"
+    },
+    {
+      "id": "block-provenance",
+      "rule": "Every generated document block must carry a stable UUID plus intent-node links, pathway id, generation-run id, lock state, freshness state, and content hash. Editor code must not create generated blocks without these attributes.",
+      "scope": ["apps/DocFlow/src/**"],
+      "severity": "high"
+    },
+    {
+      "id": "intent-graph-acyclic",
+      "rule": "Intent dependency edges must be cycle-safe: any code inserting or updating intent_edges must go through the cycle-check validation, and tests must cover cycle rejection.",
+      "scope": ["apps/DocFlow/src/**", "supabase/**"],
+      "severity": "high"
+    },
+    {
+      "id": "regeneration-concurrency-guard",
+      "rule": "Regeneration application must compare stored content hash and document version before applying, must never overwrite a newer collaborative edit (mark proposal conflicted instead), and must respect block locks.",
+      "scope": ["apps/DocFlow/src/**"],
+      "severity": "high"
+    },
+    {
+      "id": "jobs-idempotent-cancellable",
+      "rule": "Generation and regeneration jobs must carry a stable idempotency key, workspace scope, status, attempt count, and correlation id, and must be cancellable where possible.",
+      "scope": ["apps/DocFlow/src/**", "supabase/functions/**"],
+      "severity": "medium"
+    },
+    {
+      "id": "audit-and-versions",
+      "rule": "Every accepted intent or document mutation must create the corresponding version record and audit event in the same transaction or job.",
+      "scope": ["apps/DocFlow/src/**", "supabase/**"],
+      "severity": "medium"
+    },
+    {
+      "id": "migrations-additive",
+      "rule": "Database migrations must be additive, or include a documented safe rollout and rollback plan in the PR description.",
+      "scope": ["supabase/migrations/**"],
+      "severity": "medium"
+    },
+    {
+      "id": "model-gateway-boundary",
+      "rule": "Provider-specific SDK calls (Anthropic, OpenAI, etc.) must remain behind the ModelGateway interface. Components and domain code must not import provider SDKs directly.",
+      "scope": ["apps/DocFlow/src/**"],
+      "severity": "medium"
+    },
+    {
+      "id": "tests-cover-change",
+      "rule": "Changed behavior must have tests covering it, including failure and authorization cases, not only the happy path.",
+      "scope": ["**/*"],
+      "severity": "medium"
+    },
+    {
+      "id": "follow-docflow-patterns",
+      "rule": "Generated code must follow existing DocFlow patterns (component placement, utils location, styling conventions) unless an ADR in docs/decisions/ approves a new pattern.",
+      "scope": ["apps/DocFlow/src/**"],
+      "severity": "medium"
+    }
+  ]
+}

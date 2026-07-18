@@ -1,0 +1,10 @@
+{
+  "files": [
+    { "path": "CLAUDE.md", "scope": ["**/*"] },
+    { "path": "docs/build-prompt.md", "scope": ["**/*"] },
+    { "path": "docs/architecture.md", "scope": ["apps/**", "packages/**", "supabase/**"] },
+    { "path": "docs/data-model.md", "scope": ["supabase/**", "apps/DocFlow/src/**"] },
+    { "path": "docs/security.md", "scope": ["**/*"] },
+    { "path": "docs/build-state.md", "scope": ["docs/**"] }
+  ]
+}
