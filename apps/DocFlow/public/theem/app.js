@@ -295,12 +295,23 @@
     setCopy('beginningCopy', draft.beginning);
     setCopy('middleCopy', draft.middle);
     setCopy('endingCopy', draft.ending);
-    // Populate the per-section intent editors with the live intents.
-    ['beginning', 'middle', 'ending'].forEach((s) => {
-      const input = $('intentInput-' + s);
-      if (input) input.value = intents[s];
-    });
     document.title = 'theem — ' + draft.title;
+    setActiveSection(activeSection || 'beginning');
+  }
+
+  // ---- Intent Lens (right-side panel) -------------------------------------
+  let activeSection = 'beginning';
+  const SECTION_LABEL = { beginning: 'Beginning', middle: 'Middle', ending: 'End' };
+
+  function setActiveSection(section) {
+    activeSection = section;
+    document.querySelectorAll('.draft-section').forEach((el) =>
+      el.classList.toggle('is-active', el.dataset.section === section),
+    );
+    $('lensTitle').textContent = SECTION_LABEL[section];
+    $('lensWhy').textContent = intents[section];
+    $('lensPathway').textContent = selections[section] ? selections[section].name : '—';
+    $('lensIntentInput').value = intents[section];
   }
 
   // Streaming section regeneration — text renders live as it generates.
@@ -309,9 +320,11 @@
     inFlight = true;
     const wrap = $('draft' + section[0].toUpperCase() + section.slice(1));
     const copy = $(section + 'Copy');
-    const buttons = wrap.querySelectorAll('button');
+    const lensBtn = $('lensRegenerate');
 
-    buttons.forEach((b) => (b.disabled = true));
+    setActiveSection(section);
+    lensBtn.disabled = true;
+    lensBtn.textContent = '⚡ Regenerating…';
     wrap.classList.add('is-regenerating');
     copy.innerHTML = '';
     copy.classList.add('is-streaming');
@@ -379,7 +392,8 @@
       if (String(err.message) !== 'unauthenticated') errorToast(err);
     } finally {
       wrap.classList.remove('is-regenerating');
-      buttons.forEach((b) => (b.disabled = false));
+      lensBtn.disabled = false;
+      lensBtn.textContent = '⚡ Save & regenerate section';
       inFlight = false;
     }
   }
@@ -509,35 +523,19 @@
     x.addEventListener('click', () => $(x.dataset.scroll).scrollIntoView({ behavior: 'smooth' })),
   );
 
-  document.querySelectorAll('.regenerate-button').forEach((btn) =>
-    btn.addEventListener('click', () => regenerateSection(btn.dataset.regenerate)),
+  // Clicking a draft section focuses the Intent Lens on it.
+  document.querySelectorAll('.draft-section').forEach((el) =>
+    el.addEventListener('click', () => setActiveSection(el.dataset.section)),
   );
 
-  // Draft-page intent editors: toggle open, and save-intent + regenerate.
-  document.querySelectorAll('[data-edit-intent]').forEach((btn) =>
-    btn.addEventListener('click', () => {
-      const s = btn.dataset.editIntent;
-      const editor = $('intentEditor-' + s);
-      const opening = !editor.classList.contains('is-open');
-      editor.classList.toggle('is-open', opening);
-      btn.textContent = opening ? 'Close' : 'Edit intent';
-      if (opening) $('intentInput-' + s).focus();
-    }),
-  );
-
-  document.querySelectorAll('[data-apply-intent]').forEach((btn) =>
-    btn.addEventListener('click', () => {
-      if (inFlight) return;
-      const s = btn.dataset.applyIntent;
-      const next = $('intentInput-' + s).value.trim();
-      if (next) intents[s] = next;
-      const editor = $('intentEditor-' + s);
-      editor.classList.remove('is-open');
-      const toggle = document.querySelector('[data-edit-intent="' + s + '"]');
-      if (toggle) toggle.textContent = 'Edit intent';
-      regenerateSection(s);
-    }),
-  );
+  // Lens: save the edited intent and regenerate only the active section.
+  $('lensRegenerate').addEventListener('click', () => {
+    if (inFlight) return;
+    const next = $('lensIntentInput').value.trim();
+    if (next) intents[activeSection] = next;
+    $('lensWhy').textContent = intents[activeSection];
+    regenerateSection(activeSection);
+  });
 
   ['coreMessage', 'desiredEffect'].forEach((id) =>
     $(id).addEventListener('input', () => {
