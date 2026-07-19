@@ -1,6 +1,6 @@
-# Intent Writing Studio
+# theem
 
-**An AI writing product where you steer the *decisions*, not just the words.**
+**theem — an AI writing product where you steer the *decisions*, not just the words.** (formerly "Intent Writing Studio")
 
 Most AI writing tools give you one draft and a chat box. This studio makes the machinery
 legible and controllable: it proposes **3–5 genuinely different ways** to write your piece,

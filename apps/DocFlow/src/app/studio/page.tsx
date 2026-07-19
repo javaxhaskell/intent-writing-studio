@@ -90,7 +90,7 @@ export default async function StudioIndexPage({
       <div className="mx-auto max-w-3xl px-6 py-12">
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Intent Writing Studio</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">theem — classic studio view</h1>
             <p className="mt-1 text-sm text-muted-foreground">
               Explore writing pathways, inspect the intent behind every block, and regenerate only
               what your changes affect.

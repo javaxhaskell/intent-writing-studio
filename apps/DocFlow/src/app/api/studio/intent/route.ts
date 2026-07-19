@@ -37,7 +37,7 @@ export async function POST(req: Request) {
     // RLS-scoped lookup: only returns the row when the user is an org member.
     const { data: editedIntent, error: intentError } = await supabase
       .from('intent_nodes')
-      .select('id, document_id, organization_id, title')
+      .select('id, document_id, organization_id, title, kind')
       .eq('id', intentId)
       .maybeSingle();
 
@@ -99,12 +99,22 @@ export async function POST(req: Request) {
 
     const affectedIntentIds = affectedIntents.map((intent) => intent.id);
 
-    const { data: linkedBlocks, error: blocksError } = await supabase
+    // Tone and audience are document-wide constraints (a `constrains` edge to
+    // every block in the full data model): editing them affects EVERY block,
+    // not just the subtree, which for these leaf nodes would be empty.
+    const isGlobalConstraint = editedIntent.kind === 'tone' || editedIntent.kind === 'audience';
+
+    let blocksQuery = supabase
       .from('doc_blocks')
       .select('id, content_md, locked, position')
-      .in('intent_node_id', affectedIntentIds)
       .eq('document_id', editedIntent.document_id)
       .order('position', { ascending: true });
+
+    if (!isGlobalConstraint) {
+      blocksQuery = blocksQuery.in('intent_node_id', affectedIntentIds);
+    }
+
+    const { data: linkedBlocks, error: blocksError } = await blocksQuery;
 
     if (blocksError || !linkedBlocks) {
       console.error('[studio] affected blocks load failed:', blocksError?.message);
@@ -149,11 +159,17 @@ export async function POST(req: Request) {
       return jsonError(500, 'Failed to mark affected intents stale');
     }
 
-    const { error: staleBlocksError } = await supabase
+    let staleBlocksQuery = supabase
       .from('doc_blocks')
       .update({ freshness: 'stale' })
-      .in('intent_node_id', affectedIntentIds)
+      .eq('document_id', editedIntent.document_id)
       .eq('locked', false);
+
+    if (!isGlobalConstraint) {
+      staleBlocksQuery = staleBlocksQuery.in('intent_node_id', affectedIntentIds);
+    }
+
+    const { error: staleBlocksError } = await staleBlocksQuery;
 
     if (staleBlocksError) {
       console.error('[studio] block staleness update failed:', staleBlocksError.message);

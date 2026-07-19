@@ -11,7 +11,7 @@ export default function Page() {
     <main className="flex min-h-screen flex-col items-center justify-center bg-white px-6 text-neutral-900">
       <div className="w-full max-w-2xl">
         <p className="mb-4 text-sm font-medium uppercase tracking-widest text-violet-600">
-          Intent Writing Studio
+          theem
         </p>
         <h1 className="mb-6 text-4xl font-bold leading-tight sm:text-5xl">
           Steer the decisions,
@@ -29,10 +29,10 @@ export default function Page() {
         </p>
         <div className="flex flex-wrap items-center gap-4">
           <Link
-            href="/studio"
+            href="/theem/index.html"
             className="rounded-lg bg-neutral-900 px-6 py-3 font-semibold text-white transition-colors hover:bg-neutral-700"
           >
-            Open the Studio
+            Open theem
           </Link>
           <Link
             href="/auth"

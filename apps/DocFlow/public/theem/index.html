@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="theem — a typewriter-inspired, decision-first AI writing interface." />
+  <title>theem — decision-first writing</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="paper-grain" aria-hidden="true"></div>
+
+  <header class="topbar" aria-label="Application toolbar">
+    <div class="brand-lockup">
+      <button class="brand" type="button" aria-label="Return to write mode" data-mode-target="write">theem<span class="brand-dot">.</span></button>
+      <span class="status-pill"><span class="status-dot"></span> foundation locked</span>
+    </div>
+
+    <nav class="mode-switcher" aria-label="View mode">
+      <button class="mode-button is-active" type="button" data-mode-target="write" aria-pressed="true">
+        <span>Write</span><kbd>⌘ W</kbd>
+      </button>
+      <button class="mode-button" type="button" data-mode-target="decision" aria-pressed="false">
+        <span>Decisions</span><kbd>⌘ D</kbd>
+      </button>
+      <button class="mode-button" type="button" data-mode-target="pathway" aria-pressed="false">
+        <span>Pathways</span><kbd>⌘ P</kbd>
+      </button>
+    </nav>
+
+    <div class="top-actions">
+      <button id="soundToggle" class="icon-button" type="button" aria-label="Toggle typewriter sounds" aria-pressed="true" title="Sound on">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5Zm4.5 3.5a5 5 0 0 1 0 7M18 6a8 8 0 0 1 0 12"/></svg>
+      </button>
+      <button class="export-button" type="button">Export</button>
+      <button class="avatar" type="button" aria-label="Open profile">MK</button>
+    </div>
+  </header>
+
+  <main id="app" class="app-shell mode-write">
+    <aside id="decisionRibbon" class="decision-ribbon" aria-label="Document decisions" aria-hidden="true">
+      <div class="ribbon-header">
+        <div>
+          <p class="eyebrow">Intent ribbon</p>
+          <h2>How this draft thinks</h2>
+        </div>
+        <button id="closeRibbon" class="icon-button subtle" type="button" aria-label="Close decision ribbon">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+
+      <ol class="decision-timeline">
+        <li class="decision-item is-locked">
+          <div class="timeline-mark"><span></span></div>
+          <div class="decision-card">
+            <div class="decision-meta"><span>Topic</span><span class="decision-state">locked</span></div>
+            <button class="decision-value" type="button">The case for slower AI</button>
+            <p>Challenge speed as the default measure of intelligence.</p>
+          </div>
+        </li>
+
+        <li class="decision-item">
+          <div class="timeline-mark"><span></span></div>
+          <div class="decision-card">
+            <div class="decision-meta"><span>Structure</span><span class="decision-state">branchable</span></div>
+            <button class="decision-value branch-trigger" type="button">Tension → Reframe → Practice</button>
+            <div class="mini-branches" aria-hidden="true">
+              <button type="button" data-structure="Problem → Solution">Problem → Solution</button>
+              <button type="button" data-structure="Scene → Insight → Principle">Scene → Insight → Principle</button>
+              <button type="button" data-structure="Claim → Evidence → Counterpoint">Claim → Evidence → Counterpoint</button>
+            </div>
+          </div>
+        </li>
+
+        <li class="decision-item is-active">
+          <div class="timeline-mark"><span></span></div>
+          <div class="decision-card lever-card">
+            <div class="decision-meta"><span>Tone</span><span class="decision-state">active</span></div>
+            <div class="lever-labels"><span>Measured</span><strong id="toneLabel">71% urgent</strong><span>Urgent</span></div>
+            <input id="toneLever" class="lever" type="range" min="0" max="100" value="71" aria-label="Tone intensity from measured to urgent" />
+            <p>Open with pressure, end with agency.</p>
+          </div>
+        </li>
+
+        <li class="decision-item">
+          <div class="timeline-mark"><span></span></div>
+          <div class="decision-card lever-card">
+            <div class="decision-meta"><span>Evidence</span><span class="decision-state">3 sources</span></div>
+            <div class="lever-labels"><span>Light</span><strong id="evidenceLabel">Evidence-led</strong><span>Dense</span></div>
+            <input id="evidenceLever" class="lever" type="range" min="0" max="100" value="64" aria-label="Evidence density" />
+          </div>
+        </li>
+
+        <li class="decision-item">
+          <div class="timeline-mark"><span></span></div>
+          <div class="decision-card">
+            <div class="decision-meta"><span>Framing</span><span class="decision-state">tap to switch</span></div>
+            <div class="segmented" role="group" aria-label="Choose framing">
+              <button type="button" class="is-selected" data-framing="Human">Human</button>
+              <button type="button" data-framing="Economic">Economic</button>
+              <button type="button" data-framing="Technical">Technical</button>
+            </div>
+          </div>
+        </li>
+      </ol>
+
+      <div class="impact-preview" id="impactPreview" aria-live="polite">
+        <div class="impact-icon">↳</div>
+        <div>
+          <strong>2 paragraphs will change</strong>
+          <span>Opening and conclusion. Everything else stays fixed.</span>
+        </div>
+        <button id="applyDecision" type="button">Apply</button>
+      </div>
+    </aside>
+
+    <button id="marginHandle" class="margin-handle" type="button" aria-label="Open document decisions">
+      <span></span><span></span><span></span>
+      <em>Decisions</em>
+    </button>
+
+    <section id="writeView" class="write-view" aria-label="Writing canvas">
+      <div class="document-meta">
+        <button class="crumb" type="button">Essays</button><span>/</span><button class="crumb current" type="button">Slower AI</button>
+        <span class="save-state"><span></span> saved</span>
+      </div>
+
+      <article id="document" class="document" aria-label="Editable document">
+        <p class="kicker">Essay · 1,124 words · Pathway 02</p>
+        <h1 contenteditable="true" spellcheck="true">Intelligence needs friction.</h1>
+        <p class="dek" contenteditable="true" spellcheck="true">The most useful AI may not be the one that answers first, but the one that makes our decisions easier to see.</p>
+
+        <div class="body-copy" contenteditable="true" spellcheck="true" aria-label="Document body">
+          <p class="regenerable" data-intent="opening">Every new writing tool promises to remove friction. A cleaner canvas. A faster completion. A sentence before you have fully decided what you mean. Speed feels like progress because it is easy to measure.</p>
+
+          <p>But writing is not only the production of language. It is the gradual exposure of a position: the claims we are willing to defend, the evidence we trust, the audience we imagine, and the trade-offs we accept.</p>
+
+          <blockquote>When the interface hides those decisions, fluency can arrive before authorship.</blockquote>
+
+          <p>The better interaction is not another chat box. It is a surface where intention has shape—where a writer can compare several possible structures, pull the tone toward urgency or restraint, lock a paragraph that already feels true, and see what must change when one premise moves.</p>
+
+          <p class="regenerable" data-intent="ending">The goal is not to slow writers down. It is to put friction in the right place: before commitment, around consequential choices, and nowhere else. The machine can still move quickly. The writer should remain able to see the path.</p>
+        </div>
+
+        <div class="typewriter-line" aria-hidden="true"><span></span></div>
+      </article>
+
+      <aside id="marginalia" class="marginalia" aria-label="Learned preference suggestion">
+        <button class="pencil" type="button" aria-label="Open learned preference">✎</button>
+        <div class="marginalia-note">
+          <span>Pattern noticed</span>
+          <p>You often pair urgent openings with hopeful conclusions.</p>
+          <div><button id="applySuggestion" type="button">Apply pairing</button><button id="dismissSuggestion" type="button">Dismiss</button></div>
+        </div>
+      </aside>
+    </section>
+
+    <section id="pathwayView" class="pathway-view" aria-label="Writing pathways" hidden>
+      <div class="pathway-heading">
+        <div>
+          <p class="eyebrow">Four viable routes</p>
+          <h2>Choose how the argument should move.</h2>
+        </div>
+        <p>Same brief. Different underlying decisions.</p>
+      </div>
+
+      <div class="pathway-desk" role="list">
+        <article class="pathway-card" data-pathway="01" tabindex="0" role="listitem">
+          <header><span>01</span><span class="pathway-tag">Analytical</span></header>
+          <div class="paper-content">
+            <p class="mini-kicker">Evidence first</p>
+            <h3>Friction is a feature.</h3>
+            <p>Begin with the costs of invisible automation, then introduce deliberate friction as a design principle.</p>
+            <ul><li>Claim → evidence → counterpoint</li><li>Measured, rigorous tone</li><li>Ends with a design checklist</li></ul>
+          </div>
+          <footer><span>74% preference match</span><button type="button">Choose</button></footer>
+        </article>
+
+        <article class="pathway-card is-selected" data-pathway="02" tabindex="0" role="listitem">
+          <header><span>02</span><span class="pathway-tag">Editorial</span></header>
+          <div class="paper-content">
+            <p class="mini-kicker">Tension first</p>
+            <h3>Intelligence needs friction.</h3>
+            <p>Open with the cultural obsession with speed, reframe writing as decision-making, then propose a calmer interface.</p>
+            <ul><li>Tension → reframe → practice</li><li>Urgent → hopeful tone</li><li>Ends with agency</li></ul>
+          </div>
+          <footer><span>91% preference match</span><button type="button">Selected</button></footer>
+        </article>
+
+        <article class="pathway-card" data-pathway="03" tabindex="0" role="listitem">
+          <header><span>03</span><span class="pathway-tag">Narrative</span></header>
+          <div class="paper-content">
+            <p class="mini-kicker">Scene first</p>
+            <h3>The sentence that arrived too early.</h3>
+            <p>Start inside a writing session where AI completes the thought before the writer has chosen the position.</p>
+            <ul><li>Scene → insight → principle</li><li>Intimate, reflective tone</li><li>Ends with a return to scene</li></ul>
+          </div>
+          <footer><span>67% preference match</span><button type="button">Choose</button></footer>
+        </article>
+
+        <article class="pathway-card" data-pathway="04" tabindex="0" role="listitem">
+          <header><span>04</span><span class="pathway-tag">Provocation</span></header>
+          <div class="paper-content">
+            <p class="mini-kicker">Counterintuitive</p>
+            <h3>Stop making AI invisible.</h3>
+            <p>Argue that seamlessness is the wrong design goal when systems participate in consequential creative choices.</p>
+            <ul><li>Provocation → objections → manifesto</li><li>Direct, confident tone</li><li>Ends with three demands</li></ul>
+          </div>
+          <footer><span>58% preference match</span><button type="button">Choose</button></footer>
+        </article>
+      </div>
+
+      <div class="filed-pathways" aria-label="Unselected pathways">
+        <span>Unselected pathways remain filed here</span>
+        <div class="file-tabs"><button type="button">01</button><button type="button">03</button><button type="button">04</button></div>
+      </div>
+    </section>
+
+    <div id="regenerationToast" class="regeneration-toast" role="status" aria-live="polite">
+      <div class="regen-spinner"></div>
+      <div><strong>Recasting affected text</strong><span>2 paragraphs · surrounding context preserved</span></div>
+      <button id="cancelRegen" type="button">Cancel</button>
+    </div>
+  </main>
+
+  <div class="shortcut-hint" aria-hidden="true"><kbd>⌘ D</kbd> decisions <span>·</span> <kbd>⌘ P</kbd> pathways <span>·</span> <kbd>Esc</kbd> return</div>
+
+  <script src="./app.js"></script>
+  <script src="./connect.js"></script>
+</body>
+</html>

@@ -16,7 +16,7 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
-  title: 'DocFlow',
+  title: 'theem — decision-first writing',
   description:
     'DocFlow 是一个基于 Tiptap 构建的现代化文档编辑器，支持实时协作、智能AI助手和丰富的内容格式，为团队提供高效的文档创作体验。',
   keywords: [
@@ -78,7 +78,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     site: '@docflow_app',
     creator: '@docflow_app',
-    title: 'DocFlow',
+    title: 'theem — decision-first writing',
     description:
       'DocFlow 是一个基于 Tiptap 构建的现代化文档编辑器，支持实时协作、智能AI助手和丰富的内容格式。',
   },
@@ -86,7 +86,7 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'zh_CN',
     url: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
-    title: 'DocFlow',
+    title: 'theem — decision-first writing',
     description:
       'DocFlow 是一个基于 Tiptap 构建的现代化文档编辑器，支持实时协作、智能AI助手和丰富的内容格式，为团队提供高效的文档创作体验。',
     siteName: 'DocFlow',
