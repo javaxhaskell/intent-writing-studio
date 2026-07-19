@@ -115,15 +115,48 @@
         <p class="dek" contenteditable="true" id="draftDek"></p>
 
         <section class="draft-section" id="draftBeginning">
-          <header><span>Beginning</span><button class="regenerate-button" data-regenerate="beginning">Regenerate section</button></header>
+          <header>
+            <span>Beginning</span>
+            <div class="section-tools">
+              <button class="link-button" data-edit-intent="beginning">Edit intent</button>
+              <button class="regenerate-button" data-regenerate="beginning">⚡ Regenerate</button>
+            </div>
+          </header>
+          <div class="section-intent-editor" id="intentEditor-beginning">
+            <label>What this section should do</label>
+            <textarea id="intentInput-beginning" rows="2"></textarea>
+            <button class="apply-intent" data-apply-intent="beginning">Save &amp; regenerate ⚡</button>
+          </div>
           <div contenteditable="true" class="draft-copy" id="beginningCopy"></div>
         </section>
         <section class="draft-section" id="draftMiddle">
-          <header><span>Middle</span><button class="regenerate-button" data-regenerate="middle">Regenerate section</button></header>
+          <header>
+            <span>Middle</span>
+            <div class="section-tools">
+              <button class="link-button" data-edit-intent="middle">Edit intent</button>
+              <button class="regenerate-button" data-regenerate="middle">⚡ Regenerate</button>
+            </div>
+          </header>
+          <div class="section-intent-editor" id="intentEditor-middle">
+            <label>What this section should do</label>
+            <textarea id="intentInput-middle" rows="2"></textarea>
+            <button class="apply-intent" data-apply-intent="middle">Save &amp; regenerate ⚡</button>
+          </div>
           <div contenteditable="true" class="draft-copy" id="middleCopy"></div>
         </section>
         <section class="draft-section" id="draftEnding">
-          <header><span>End</span><button class="regenerate-button" data-regenerate="ending">Regenerate section</button></header>
+          <header>
+            <span>End</span>
+            <div class="section-tools">
+              <button class="link-button" data-edit-intent="ending">Edit intent</button>
+              <button class="regenerate-button" data-regenerate="ending">⚡ Regenerate</button>
+            </div>
+          </header>
+          <div class="section-intent-editor" id="intentEditor-ending">
+            <label>What this section should do</label>
+            <textarea id="intentInput-ending" rows="2"></textarea>
+            <button class="apply-intent" data-apply-intent="ending">Save &amp; regenerate ⚡</button>
+          </div>
           <div contenteditable="true" class="draft-copy" id="endingCopy"></div>
         </section>
       </article>

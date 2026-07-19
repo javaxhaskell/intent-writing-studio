@@ -295,37 +295,91 @@
     setCopy('beginningCopy', draft.beginning);
     setCopy('middleCopy', draft.middle);
     setCopy('endingCopy', draft.ending);
+    // Populate the per-section intent editors with the live intents.
+    ['beginning', 'middle', 'ending'].forEach((s) => {
+      const input = $('intentInput-' + s);
+      if (input) input.value = intents[s];
+    });
     document.title = 'theem — ' + draft.title;
   }
 
+  // Streaming section regeneration — text renders live as it generates.
   async function regenerateSection(section) {
     if (inFlight || !draft) return;
     inFlight = true;
-    const el = $('draft' + section[0].toUpperCase() + section.slice(1));
-    el.classList.add('is-regenerating');
-    showToast('Regenerating only this section', 'The rest of your draft stays fixed.');
+    const wrap = $('draft' + section[0].toUpperCase() + section.slice(1));
+    const copy = $(section + 'Copy');
+    const buttons = wrap.querySelectorAll('button');
+
+    buttons.forEach((b) => (b.disabled = true));
+    wrap.classList.add('is-regenerating');
+    copy.innerHTML = '';
+    copy.classList.add('is-streaming');
+
     try {
-      const res = await api('regenerate', {
-        brief,
-        section,
-        sectionIntent: intents[section],
-        selectionName: selections[section].name,
-        currentDraft: {
-          title: draft.title,
-          beginning: draft.beginning,
-          middle: draft.middle,
-          ending: draft.ending,
-        },
+      const res = await fetch('/api/theem/regenerate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          brief,
+          section,
+          sectionIntent: intents[section],
+          selectionName: selections[section].name,
+          currentDraft: {
+            title: draft.title,
+            beginning: draft.beginning,
+            middle: draft.middle,
+            ending: draft.ending,
+          },
+        }),
       });
-      draft[section] = res.content;
-      const copy = $(section + 'Copy');
+
+      if (res.status === 401) {
+        const here = window.location.pathname + window.location.search;
+        window.location.href = '/auth?redirect_to=' + encodeURIComponent(here);
+
+        return;
+      }
+
+      if (!res.ok || !res.body) {
+        let msg = 'Request failed (' + res.status + ')';
+        try {
+          msg = (await res.json()).error || msg;
+        } catch (_) {
+          /* ignore */
+        }
+        throw new Error(msg);
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let text = '';
+
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) break;
+        text += decoder.decode(value, { stream: true });
+        // live render: textContent keeps model output inert (no HTML)
+        copy.textContent = text;
+      }
+
+      draft[section] = text.trim();
+      copy.classList.remove('is-streaming');
       copy.innerHTML = '';
-      copy.appendChild(paragraphs(res.content));
-      hideToast();
+      copy.appendChild(paragraphs(text));
     } catch (err) {
+      copy.classList.remove('is-streaming');
+      if (draft[section]) {
+        copy.innerHTML = '';
+        copy.appendChild(paragraphs(draft[section]));
+      }
       if (String(err.message) !== 'unauthenticated') errorToast(err);
     } finally {
-      el.classList.remove('is-regenerating');
+      wrap.classList.remove('is-regenerating');
+      buttons.forEach((b) => (b.disabled = false));
       inFlight = false;
     }
   }
@@ -457,6 +511,32 @@
 
   document.querySelectorAll('.regenerate-button').forEach((btn) =>
     btn.addEventListener('click', () => regenerateSection(btn.dataset.regenerate)),
+  );
+
+  // Draft-page intent editors: toggle open, and save-intent + regenerate.
+  document.querySelectorAll('[data-edit-intent]').forEach((btn) =>
+    btn.addEventListener('click', () => {
+      const s = btn.dataset.editIntent;
+      const editor = $('intentEditor-' + s);
+      const opening = !editor.classList.contains('is-open');
+      editor.classList.toggle('is-open', opening);
+      btn.textContent = opening ? 'Close' : 'Edit intent';
+      if (opening) $('intentInput-' + s).focus();
+    }),
+  );
+
+  document.querySelectorAll('[data-apply-intent]').forEach((btn) =>
+    btn.addEventListener('click', () => {
+      if (inFlight) return;
+      const s = btn.dataset.applyIntent;
+      const next = $('intentInput-' + s).value.trim();
+      if (next) intents[s] = next;
+      const editor = $('intentEditor-' + s);
+      editor.classList.remove('is-open');
+      const toggle = document.querySelector('[data-edit-intent="' + s + '"]');
+      if (toggle) toggle.textContent = 'Edit intent';
+      regenerateSection(s);
+    }),
   );
 
   ['coreMessage', 'desiredEffect'].forEach((id) =>

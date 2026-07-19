@@ -223,3 +223,116 @@ export async function callClaudeJson<S extends z.ZodTypeAny>(
     second.error.issues,
   );
 }
+
+// ---------------------------------------------------------------------------
+// Streaming text output (for low-latency, live-rendered regeneration)
+// ---------------------------------------------------------------------------
+
+/**
+ * Calls the Anthropic Messages API with streaming enabled and returns a
+ * ReadableStream of the plain text deltas (no JSON envelope). The caller is
+ * responsible for treating the text as untrusted (render via textContent).
+ */
+export async function callClaudeTextStream({
+  system,
+  user,
+  maxTokens = 1200,
+}: CallClaudeOptions): Promise<ReadableStream<Uint8Array>> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+
+  if (!apiKey) {
+    throw new GatewayConfigError('ANTHROPIC_API_KEY is not configured on the server');
+  }
+
+  const res = await fetch(ANTHROPIC_MESSAGES_URL, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': ANTHROPIC_VERSION,
+    },
+    body: JSON.stringify({
+      model: getModelId(),
+      max_tokens: maxTokens,
+      stream: true,
+      system,
+      messages: [{ role: 'user', content: user }],
+    }),
+  });
+
+  if (!res.ok || !res.body) {
+    const bodyText = await res.text().catch(() => '');
+
+    throw new GatewayApiError(
+      `Anthropic API returned ${res.status}`,
+      res.status,
+      bodyText.slice(0, 2000),
+    );
+  }
+
+  const upstream = res.body.getReader();
+  const decoder = new TextDecoder();
+  const encoder = new TextEncoder();
+
+  const emitFromLine = (line: string, controller: ReadableStreamDefaultController<Uint8Array>) => {
+    const trimmed = line.trim();
+
+    if (!trimmed.startsWith('data:')) return;
+
+    const payload = trimmed.slice(5).trim();
+
+    if (!payload || payload === '[DONE]') return;
+
+    try {
+      const event = JSON.parse(payload) as {
+        type?: string;
+        delta?: { type?: string; text?: string };
+      };
+
+      if (
+        event.type === 'content_block_delta' &&
+        event.delta?.type === 'text_delta' &&
+        event.delta.text
+      ) {
+        controller.enqueue(encoder.encode(event.delta.text));
+      }
+    } catch {
+      // ignore keep-alive / non-JSON lines
+    }
+  };
+
+  // start()-based pump: loops the whole upstream and ALWAYS closes at the end,
+  // avoiding the pull-based close-propagation hang.
+  return new ReadableStream<Uint8Array>({
+    async start(controller) {
+      let buffer = '';
+
+      try {
+        for (;;) {
+          const { done, value } = await upstream.read();
+
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+
+          buffer = lines.pop() ?? '';
+
+          for (const line of lines) emitFromLine(line, controller);
+        }
+
+        // flush any trailing buffered line
+        if (buffer.trim()) emitFromLine(buffer, controller);
+      } catch (err) {
+        controller.error(err);
+
+        return;
+      }
+
+      controller.close();
+    },
+    cancel() {
+      upstream.cancel().catch(() => {});
+    },
+  });
+}

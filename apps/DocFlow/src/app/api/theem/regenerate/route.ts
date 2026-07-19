@@ -1,10 +1,15 @@
-import { callClaudeJson } from '@/lib/studio/gateway';
-import { RegenerateRequestSchema, SectionModelOutputSchema } from '@/lib/theem/contracts';
+import { callClaudeTextStream } from '@/lib/studio/gateway';
+import { RegenerateRequestSchema } from '@/lib/theem/contracts';
 
 import { jsonError, requireUser, handleTheemError, briefBlock } from '../_lib';
 
 export const maxDuration = 300;
 
+/**
+ * Streams a regenerated section as plain text (live-rendered on the draft
+ * page for a fast, typewriter-style feel). Only the requested section is
+ * rewritten; the surrounding sections are held fixed for coherence.
+ */
 export async function POST(req: Request) {
   try {
     let body: unknown;
@@ -29,12 +34,12 @@ export async function POST(req: Request) {
 
     const others = (['beginning', 'middle', 'ending'] as const)
       .filter((s) => s !== section)
-      .map((s) => `${s.toUpperCase()} (unchanged):\n${currentDraft[s]}`)
+      .map((s) => `${s.toUpperCase()} (fixed — do not repeat):\n${currentDraft[s]}`)
       .join('\n\n');
 
     const system = [
-      'You are theem. Regenerate ONLY the requested section of an existing draft. The surrounding sections are fixed — your new section must fit between them seamlessly (voice, facts, and flow consistent).',
-      'Return ONLY JSON: {"content"} where content is the rewritten section as 2-3 short paragraphs separated by blank lines. Plain prose, no markdown headers or fences.',
+      'You are theem. Rewrite ONLY the requested section of an existing draft so it fits seamlessly between the fixed surrounding sections (consistent voice, facts and flow).',
+      'Output ONLY the rewritten section as 2-3 short paragraphs of plain prose separated by blank lines. No preamble, no headers, no markdown, no quotation marks around the whole thing — just the prose.',
     ].join('\n');
 
     const user = [
@@ -43,22 +48,25 @@ export async function POST(req: Request) {
       '',
       `Draft title: ${currentDraft.title}`,
       '',
-      'SURROUNDING SECTIONS THAT MUST NOT CHANGE:',
+      'SURROUNDING SECTIONS (fixed):',
       others,
       '',
-      `REGENERATE THE ${section.toUpperCase()} SECTION.`,
-      `Chosen approach: "${selectionName}". Section intent: ${sectionIntent}`,
+      `REWRITE THE ${section.toUpperCase()} SECTION.`,
+      `Chosen approach: "${selectionName}".`,
+      `Section intent: ${sectionIntent}`,
       '',
-      'Return the new section as JSON now.',
+      'Write the new section now.',
     ].join('\n');
 
-    const result = await callClaudeJson(SectionModelOutputSchema, {
-      system,
-      user,
-      maxTokens: 1600,
-    });
+    const stream = await callClaudeTextStream({ system, user, maxTokens: 1024 });
 
-    return Response.json(result);
+    return new Response(stream, {
+      headers: {
+        'content-type': 'text/plain; charset=utf-8',
+        'cache-control': 'no-store',
+        'x-accel-buffering': 'no',
+      },
+    });
   } catch (err) {
     return handleTheemError(err);
   }

@@ -14,3 +14,17 @@
 .toast.is-error{background:var(--accent)}
 .toast.is-error>span{display:none}
 .primary-button.is-busy{opacity:.6;pointer-events:none}
+
+.draft-section header .section-tools{display:flex;gap:14px;align-items:center}
+.link-button{border:0;background:none;color:var(--muted);font-size:11px;cursor:pointer;text-decoration:underline;text-underline-offset:3px;opacity:0;transition:.2s}
+.draft-section:hover .link-button{opacity:1}
+.regenerate-button{white-space:nowrap}
+.section-intent-editor{display:none;flex-direction:column;gap:9px;margin:2px 0 18px;padding:16px;border:1px solid var(--line);background:rgba(255,253,248,.85);border-radius:12px}
+.section-intent-editor.is-open{display:flex}
+.section-intent-editor label{font:11px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.section-intent-editor textarea{min-height:56px;font:14px/1.5 var(--sans)}
+.apply-intent{align-self:flex-start;border:0;background:var(--accent);color:#fff;border-radius:9px;padding:10px 15px;font-weight:700;font-size:13px;cursor:pointer}
+.apply-intent:disabled,.regenerate-button:disabled{opacity:.5;cursor:not-allowed}
+.draft-copy.is-streaming{color:var(--ink)}
+.draft-copy.is-streaming::after{content:"▍";color:var(--accent);animation:theemCaret .8s steps(1) infinite}
+@keyframes theemCaret{50%{opacity:0}}
