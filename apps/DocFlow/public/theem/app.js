@@ -1,240 +1,470 @@
 (() => {
-  const app = document.getElementById('app');
-  const writeView = document.getElementById('writeView');
-  const pathwayView = document.getElementById('pathwayView');
-  const ribbon = document.getElementById('decisionRibbon');
-  const modeButtons = [...document.querySelectorAll('[data-mode-target]')];
-  const toneLever = document.getElementById('toneLever');
-  const evidenceLever = document.getElementById('evidenceLever');
-  const toneLabel = document.getElementById('toneLabel');
-  const evidenceLabel = document.getElementById('evidenceLabel');
-  const impactPreview = document.getElementById('impactPreview');
-  const applyDecision = document.getElementById('applyDecision');
-  const toast = document.getElementById('regenerationToast');
-  const soundToggle = document.getElementById('soundToggle');
-  const marginalia = document.getElementById('marginalia');
-  const documentNode = document.getElementById('document');
-  let currentMode = 'write';
-  let soundOn = true;
-  let regenTimer = null;
-  let audioContext = null;
-  let pendingTone = Number(toneLever.value);
+  'use strict';
 
-  const copy = {
-    urgent: {
-      opening: 'Every new writing tool promises to remove friction. A cleaner canvas. A faster completion. A sentence before you have fully decided what you mean. Speed feels like progress because it is easy to measure.',
-      ending: 'The goal is not to slow writers down. It is to put friction in the right place: before commitment, around consequential choices, and nowhere else. The machine can still move quickly. The writer should remain able to see the path.'
-    },
-    balanced: {
-      opening: 'Writing software has spent decades removing friction: cleaner canvases, faster completion, fewer visible decisions. The gains are real. Yet speed is only one measure of a good writing process.',
-      ending: 'Useful friction does not obstruct the writer. It clarifies where a choice deserves attention, then disappears. The machine may move quickly while the author retains a clear view of the route.'
-    },
-    measured: {
-      opening: 'A writing tool can be fast without asking the writer to decide quickly. That distinction matters. Fluency is valuable, but it is not identical to clarity, judgment, or authorship.',
-      ending: 'Perhaps the best interface is not the one with the least friction, but the one that places friction carefully. It can preserve momentum while still giving the writer time to recognize a consequential choice.'
-    }
+  const stages = ['brief', 'beginning', 'middle', 'ending', 'draft'];
+  const $ = (id) => document.getElementById(id);
+  const views = { brief: $('briefView'), choice: $('choiceView'), draft: $('draftView') };
+  const toast = document.getElementById('toast');
+
+  // ---- state --------------------------------------------------------------
+  const DEFAULT_INTENTS = {
+    beginning:
+      'Introduce something the reader recognises, then reveal the hidden contradiction the piece is about.',
+    middle:
+      'Develop the reasoning and evidence honestly, separating what is known from what is uncertain.',
+    ending:
+      'Leave the reader with agency: a clear reason to reconsider and a realistic next step.',
   };
 
-  function getAudioContext() {
-    if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    return audioContext;
-  }
+  let currentStage = 'brief';
+  let brief = null;
+  let intents = { ...DEFAULT_INTENTS };
+  const options = { beginning: null, middle: null, ending: null };
+  const selections = { beginning: null, middle: null, ending: null };
+  let draft = null;
+  let inFlight = false;
 
-  function clickSound(pitch = 150, duration = 0.025, volume = 0.03) {
-    if (!soundOn) return;
-    try {
-      const ctx = getAudioContext();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(pitch, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(Math.max(60, pitch * .55), ctx.currentTime + duration);
-      gain.gain.setValueAtTime(volume, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(.0001, ctx.currentTime + duration);
-      osc.connect(gain).connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + duration);
-    } catch (_) {}
-  }
-
-  function bellSound() {
-    if (!soundOn) return;
-    try {
-      const ctx = getAudioContext();
-      [880, 1320].forEach((frequency, index) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.value = frequency;
-        gain.gain.setValueAtTime(.045 / (index + 1), ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(.0001, ctx.currentTime + .65);
-        osc.connect(gain).connect(ctx.destination);
-        osc.start(ctx.currentTime + index * .025);
-        osc.stop(ctx.currentTime + .7);
-      });
-    } catch (_) {}
-  }
-
-  function setMode(mode) {
-    if (!['write', 'decision', 'pathway'].includes(mode)) return;
-    currentMode = mode;
-    app.classList.remove('mode-write', 'mode-decision', 'mode-pathway');
-    app.classList.add(`mode-${mode}`);
-    writeView.hidden = mode === 'pathway';
-    pathwayView.hidden = mode !== 'pathway';
-    ribbon.setAttribute('aria-hidden', mode === 'decision' ? 'false' : 'true');
-    modeButtons.forEach((button) => {
-      const active = button.dataset.modeTarget === mode;
-      button.classList.toggle('is-active', active);
-      if (button.classList.contains('mode-button')) button.setAttribute('aria-pressed', String(active));
+  // ---- backend ------------------------------------------------------------
+  async function api(path, payload) {
+    const res = await fetch('/api/theem/' + path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify(payload),
     });
-    clickSound(mode === 'pathway' ? 115 : 145, .035, .025);
+
+    if (res.status === 401) {
+      const here = window.location.pathname + window.location.search;
+      window.location.href = '/auth?redirect_to=' + encodeURIComponent(here);
+      throw new Error('unauthenticated');
+    }
+
+    if (!res.ok) {
+      let msg = 'Request failed (' + res.status + ')';
+      try {
+        msg = (await res.json()).error || msg;
+      } catch (_) {
+        /* ignore */
+      }
+      throw new Error(msg);
+    }
+
+    return res.json();
   }
 
-  function markDecisionPending() {
-    impactPreview.classList.add('is-visible');
-    document.querySelectorAll('.regenerable').forEach((p) => p.classList.add('is-affected'));
-  }
-
-  function updateLever(input) {
-    input.style.setProperty('--value', `${input.value}%`);
-  }
-
-  function toneDescriptor(value) {
-    if (value < 35) return `${100 - value}% measured`;
-    if (value < 66) return 'Balanced';
-    return `${value}% urgent`;
-  }
-
-  function evidenceDescriptor(value) {
-    if (value < 35) return 'Light-touch';
-    if (value < 72) return 'Evidence-led';
-    return 'Source-dense';
-  }
-
-  function regenerate() {
-    const affected = [...document.querySelectorAll('.regenerable')];
-    impactPreview.classList.remove('is-visible');
+  function showToast(title, detail, isError) {
+    toast.classList.toggle('is-error', !!isError);
+    toast.querySelector('strong').textContent = title;
+    toast.querySelector('small').textContent = detail;
     toast.classList.add('is-visible');
-    affected.forEach((p) => p.classList.add('is-ghosting'));
-
-    const variant = pendingTone < 35 ? 'measured' : pendingTone < 66 ? 'balanced' : 'urgent';
-    clearTimeout(regenTimer);
-    regenTimer = setTimeout(() => {
-      affected.forEach((p) => {
-        p.textContent = copy[variant][p.dataset.intent];
-        p.classList.remove('is-ghosting');
-        p.classList.add('is-materializing');
-        setTimeout(() => p.classList.remove('is-affected', 'is-materializing'), 750);
-      });
-      toast.classList.remove('is-visible');
-      bellSound();
-    }, 1050);
+  }
+  const hideToast = () => toast.classList.remove('is-visible');
+  function errorToast(err) {
+    console.error('[theem]', err);
+    showToast('That step did not go through', String(err.message || err).slice(0, 96), true);
+    setTimeout(hideToast, 4600);
   }
 
-  modeButtons.forEach((button) => button.addEventListener('click', () => setMode(button.dataset.modeTarget)));
-  document.getElementById('marginHandle').addEventListener('click', () => setMode('decision'));
-  document.getElementById('closeRibbon').addEventListener('click', () => setMode('write'));
-
-  toneLever.addEventListener('input', () => {
-    pendingTone = Number(toneLever.value);
-    updateLever(toneLever);
-    toneLabel.textContent = toneDescriptor(pendingTone);
-    markDecisionPending();
-    clickSound(110 + pendingTone * 1.4, .018, .02);
-  });
-
-  evidenceLever.addEventListener('input', () => {
-    updateLever(evidenceLever);
-    evidenceLabel.textContent = evidenceDescriptor(Number(evidenceLever.value));
-    markDecisionPending();
-    clickSound(105 + Number(evidenceLever.value), .018, .018);
-  });
-
-  document.querySelectorAll('[data-framing]').forEach((button) => {
-    button.addEventListener('click', () => {
-      document.querySelectorAll('[data-framing]').forEach((b) => b.classList.toggle('is-selected', b === button));
-      markDecisionPending();
-      clickSound(155, .025, .025);
-    });
-  });
-
-  const branchTrigger = document.querySelector('.branch-trigger');
-  branchTrigger.addEventListener('click', () => {
-    branchTrigger.closest('.decision-card').classList.toggle('is-open');
-    clickSound(135, .025, .02);
-  });
-  document.querySelectorAll('[data-structure]').forEach((button) => {
-    button.addEventListener('click', () => {
-      branchTrigger.textContent = button.dataset.structure;
-      branchTrigger.closest('.decision-card').classList.remove('is-open');
-      markDecisionPending();
-      clickSound(165, .025, .025);
-    });
-  });
-
-  applyDecision.addEventListener('click', regenerate);
-  document.getElementById('cancelRegen').addEventListener('click', () => {
-    clearTimeout(regenTimer);
-    toast.classList.remove('is-visible');
-    document.querySelectorAll('.regenerable').forEach((p) => p.classList.remove('is-affected', 'is-ghosting'));
-  });
-
-  soundToggle.addEventListener('click', () => {
-    soundOn = !soundOn;
-    soundToggle.setAttribute('aria-pressed', String(soundOn));
-    soundToggle.title = soundOn ? 'Sound on' : 'Sound off';
-    if (soundOn) clickSound(170, .035, .03);
-  });
-
-  document.querySelector('.pencil').addEventListener('click', () => marginalia.classList.toggle('is-open'));
-  document.getElementById('dismissSuggestion').addEventListener('click', () => marginalia.classList.remove('is-open'));
-  document.getElementById('applySuggestion').addEventListener('click', () => {
-    toneLever.value = 78;
-    pendingTone = 78;
-    updateLever(toneLever);
-    toneLabel.textContent = toneDescriptor(78);
-    marginalia.classList.remove('is-open');
-    markDecisionPending();
-    setMode('decision');
-  });
-
-  document.querySelectorAll('.pathway-card').forEach((card) => {
-    const choose = card.querySelector('footer button');
-    const select = () => {
-      document.querySelectorAll('.pathway-card').forEach((candidate) => {
-        const selected = candidate === card;
-        candidate.classList.toggle('is-selected', selected);
-        candidate.querySelector('footer button').textContent = selected ? 'Selected' : 'Choose';
-      });
-      clickSound(125, .04, .03);
-      setTimeout(bellSound, 80);
+  // ---- brief --------------------------------------------------------------
+  function readBrief() {
+    return {
+      coreMessage: $('coreMessage').value.trim(),
+      audience: $('audience').value.trim(),
+      desiredEffect: $('desiredEffect').value.trim(),
+      mustInclude: $('mustInclude').value.trim(),
+      mustAvoid: $('mustAvoid').value.trim(),
     };
-    choose.addEventListener('click', (event) => { event.stopPropagation(); select(); });
-    card.addEventListener('dblclick', select);
-    card.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); select(); } });
-  });
+  }
 
-  documentNode.addEventListener('keydown', (event) => {
-    if (event.target.closest('[contenteditable="true"]')) {
-      document.body.classList.add('is-typing');
-      if (event.key.length === 1 || event.key === 'Backspace' || event.key === 'Enter') clickSound(125 + Math.random() * 45, .02, .018);
+  const pick = (o) => (o ? { name: o.name, tone: o.tone, summary: o.summary } : null);
+  function priorSelections(stage) {
+    const out = {};
+    if (stage === 'middle' || stage === 'ending') out.beginning = pick(selections.beginning);
+    if (stage === 'ending') out.middle = pick(selections.middle);
+
+    return out;
+  }
+
+  // ---- stage navigation ---------------------------------------------------
+  function setStage(stage) {
+    currentStage = stage;
+    Object.values(views).forEach((v) => v.classList.remove('is-visible'));
+    (stage === 'brief' ? views.brief : stage === 'draft' ? views.draft : views.choice).classList.add(
+      'is-visible',
+    );
+    document.querySelectorAll('.progress-step').forEach((b) => {
+      const idx = stages.indexOf(b.dataset.step);
+      const cur = stages.indexOf(stage);
+      b.classList.toggle('is-active', b.dataset.step === stage);
+      b.classList.toggle('is-complete', idx < cur);
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    if (['beginning', 'middle', 'ending'].includes(stage)) renderChoices(stage);
+    if (stage === 'draft') renderDraft();
+  }
+
+  // ---- choices ------------------------------------------------------------
+  const STAGE_TITLES = {
+    beginning: ['Choose the beginning', 'How should the reader enter the argument?', 'Four openings. Same message, different first experience.'],
+    middle: ['Choose the middle', 'How should the case unfold?', 'Four ways to develop the reasoning without losing the reader.'],
+    ending: ['Choose the ending', 'What should remain after the final line?', 'Four conclusions. Choose the action, feeling or question the draft leaves behind.'],
+  };
+
+  function applyChoiceHeader(stage) {
+    const t = STAGE_TITLES[stage];
+    $('choiceEyebrow').textContent = t[0];
+    $('choiceTitle').textContent = t[1];
+    $('choiceSubtitle').textContent = t[2];
+    $('sectionIntentLabel').textContent = t[0].replace('Choose the ', '') + ' intent';
+    $('sectionIntentInput').value = intents[stage];
+  }
+
+  function showChoiceLoading(stage) {
+    applyChoiceHeader(stage);
+    $('sectionIntentPanel').classList.remove('is-open');
+    const grid = $('pathwayGrid');
+    grid.classList.add('is-loading');
+    grid.innerHTML =
+      '<div class="theem-skeleton">Exploring four distinct ' +
+      stage +
+      's<span class="dot"></span><span class="dot"></span><span class="dot"></span></div>';
+    $('selectionStage').textContent = stage[0].toUpperCase() + stage.slice(1) + ' selected';
+    $('selectionName').textContent = 'Generating…';
+    $('continueButton').disabled = true;
+  }
+
+  async function ensureOptions(stage) {
+    if (options[stage]) return;
+    showChoiceLoading(stage);
+    const res = await api('pathways', {
+      brief,
+      stage,
+      intent: intents[stage],
+      priorSelections: priorSelections(stage),
+    });
+    options[stage] = res.options;
+  }
+
+  function renderChoices(stage) {
+    applyChoiceHeader(stage);
+    const list = options[stage];
+
+    if (!list) {
+      ensureOptions(stage)
+        .then(() => {
+          if (currentStage === stage) renderChoices(stage);
+        })
+        .catch((err) => {
+          if (String(err.message) !== 'unauthenticated') errorToast(err);
+        });
+
+      return;
+    }
+
+    const grid = $('pathwayGrid');
+    grid.classList.remove('is-loading');
+    grid.innerHTML = list
+      .map(
+        (_, i) =>
+          '<article class="pathway-card" data-index="' +
+          i +
+          '" tabindex="0">' +
+          '<span class="pathway-number">0' +
+          (i + 1) +
+          '</span>' +
+          '<h2></h2><span class="tone-pill"></span>' +
+          '<p class="pathway-summary"></p>' +
+          '<p class="pathway-label">What this section would say</p>' +
+          '<blockquote></blockquote>' +
+          '<p class="pathway-label">Movement</p>' +
+          '<ol class="pathway-steps"></ol>' +
+          '<footer class="pathway-footer"><span></span><button>Select pathway</button></footer>' +
+          '</article>',
+      )
+      .join('');
+
+    // Fill via textContent (never innerHTML) — model output is untrusted.
+    [...grid.querySelectorAll('.pathway-card')].forEach((card, i) => {
+      const p = list[i];
+      if (selections[stage] && selections[stage].name === p.name) card.classList.add('is-selected');
+      card.querySelector('h2').textContent = p.name;
+      card.querySelector('.tone-pill').textContent = p.tone;
+      card.querySelector('.pathway-summary').textContent = p.summary;
+      card.querySelector('blockquote').textContent = p.sample;
+      const ol = card.querySelector('.pathway-steps');
+      p.steps.forEach((s) => {
+        const li = document.createElement('li');
+        li.textContent = s;
+        ol.appendChild(li);
+      });
+      card.querySelector('.pathway-footer span').textContent = p.match;
+
+      const choose = () => {
+        selections[stage] = list[Number(card.dataset.index)];
+        if (stage === 'beginning') {
+          options.middle = options.ending = null;
+          selections.middle = selections.ending = null;
+        } else if (stage === 'middle') {
+          options.ending = null;
+          selections.ending = null;
+        }
+        draft = null;
+        renderChoices(stage);
+      };
+      card.addEventListener('click', choose);
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          choose();
+        }
+      });
+    });
+
+    updateSelectionBar(stage);
+  }
+
+  function updateSelectionBar(stage) {
+    $('selectionStage').textContent = stage[0].toUpperCase() + stage.slice(1) + ' selected';
+    $('selectionName').textContent = selections[stage]
+      ? selections[stage].name
+      : 'Choose one of the four pathways';
+    $('continueButton').disabled = !selections[stage];
+    $('continueButton').innerHTML =
+      stage === 'ending' ? 'Build draft <span>→</span>' : 'Continue <span>→</span>';
+  }
+
+  // ---- draft --------------------------------------------------------------
+  function paragraphs(text) {
+    const frag = document.createDocumentFragment();
+    String(text || '')
+      .split(/\n{2,}/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .forEach((para) => {
+        const p = document.createElement('p');
+        p.textContent = para;
+        frag.appendChild(p);
+      });
+
+    return frag;
+  }
+
+  async function ensureDraft() {
+    if (draft) return;
+    showToast('Assembling your draft', 'Weaving the three chosen sections into one piece.');
+    draft = await api('draft', {
+      brief,
+      intents,
+      selections: {
+        beginning: selections.beginning,
+        middle: selections.middle,
+        ending: selections.ending,
+      },
+    });
+    hideToast();
+  }
+
+  function renderDraft() {
+    if (!draft) {
+      ensureDraft()
+        .then(() => {
+          if (currentStage === 'draft') renderDraft();
+        })
+        .catch((err) => {
+          if (String(err.message) !== 'unauthenticated') {
+            errorToast(err);
+            setStage('ending');
+          }
+        });
+
+      return;
+    }
+
+    $('mapBeginning').textContent = selections.beginning.name;
+    $('mapMiddle').textContent = selections.middle.name;
+    $('mapEnding').textContent = selections.ending.name;
+    $('draftTitle').textContent = draft.title;
+    $('draftDek').textContent = draft.dek;
+
+    const setCopy = (id, text) => {
+      const node = $(id);
+      node.innerHTML = '';
+      node.appendChild(paragraphs(text));
+    };
+    setCopy('beginningCopy', draft.beginning);
+    setCopy('middleCopy', draft.middle);
+    setCopy('endingCopy', draft.ending);
+    document.title = 'theem — ' + draft.title;
+  }
+
+  async function regenerateSection(section) {
+    if (inFlight || !draft) return;
+    inFlight = true;
+    const el = $('draft' + section[0].toUpperCase() + section.slice(1));
+    el.classList.add('is-regenerating');
+    showToast('Regenerating only this section', 'The rest of your draft stays fixed.');
+    try {
+      const res = await api('regenerate', {
+        brief,
+        section,
+        sectionIntent: intents[section],
+        selectionName: selections[section].name,
+        currentDraft: {
+          title: draft.title,
+          beginning: draft.beginning,
+          middle: draft.middle,
+          ending: draft.ending,
+        },
+      });
+      draft[section] = res.content;
+      const copy = $(section + 'Copy');
+      copy.innerHTML = '';
+      copy.appendChild(paragraphs(res.content));
+      hideToast();
+    } catch (err) {
+      if (String(err.message) !== 'unauthenticated') errorToast(err);
+    } finally {
+      el.classList.remove('is-regenerating');
+      inFlight = false;
+    }
+  }
+
+  // ---- reset / New --------------------------------------------------------
+  function resetAll(clearFields) {
+    brief = null;
+    intents = { ...DEFAULT_INTENTS };
+    options.beginning = options.middle = options.ending = null;
+    selections.beginning = selections.middle = selections.ending = null;
+    draft = null;
+    document.title = 'theem — shape the draft';
+    if (clearFields) {
+      ['coreMessage', 'audience', 'desiredEffect', 'mustInclude', 'mustAvoid'].forEach((id) => {
+        $(id).value = '';
+      });
+      const dt = document.querySelector('.document-title');
+      if (dt) dt.textContent = 'Untitled brief';
+      $('draftSpine').textContent = 'Establish → develop → resolve';
+    }
+    setStage('brief');
+    $('coreMessage').focus();
+  }
+
+  // ---- events -------------------------------------------------------------
+  $('briefForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (inFlight) return;
+    const b = readBrief();
+
+    if (!b.coreMessage || !b.audience || !b.desiredEffect) {
+      showToast('A little more to go on', 'Fill in core message, audience and desired effect.', true);
+      setTimeout(hideToast, 3600);
+
+      return;
+    }
+
+    brief = b;
+    options.beginning = options.middle = options.ending = null;
+    selections.beginning = selections.middle = selections.ending = null;
+    draft = null;
+
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    submitBtn.classList.add('is-busy');
+    inFlight = true;
+    setStage('beginning');
+    try {
+      await ensureOptions('beginning');
+      if (currentStage === 'beginning') renderChoices('beginning');
+    } catch (err) {
+      if (String(err.message) !== 'unauthenticated') {
+        errorToast(err);
+        setStage('brief');
+      }
+    } finally {
+      submitBtn.classList.remove('is-busy');
+      inFlight = false;
     }
   });
-  documentNode.addEventListener('keyup', () => setTimeout(() => document.body.classList.remove('is-typing'), 450));
 
-  window.addEventListener('scroll', () => document.body.classList.toggle('has-scrolled', window.scrollY > 8), { passive: true });
-  window.addEventListener('keydown', (event) => {
-    const mod = event.metaKey || event.ctrlKey;
-    if (mod && event.key.toLowerCase() === 'd') { event.preventDefault(); setMode('decision'); }
-    if (mod && event.key.toLowerCase() === 'p') { event.preventDefault(); setMode('pathway'); }
-    if (mod && event.key.toLowerCase() === 'w') { event.preventDefault(); setMode('write'); }
-    if (event.key === 'Escape') setMode('write');
+  $('editIntentButton').addEventListener('click', () =>
+    $('sectionIntentPanel').classList.toggle('is-open'),
+  );
+
+  $('saveSectionIntent').addEventListener('click', () => {
+    const stage = currentStage;
+    intents[stage] = $('sectionIntentInput').value.trim() || intents[stage];
+    $('sectionIntentPanel').classList.remove('is-open');
+    options[stage] = null;
+    selections[stage] = null;
+    if (stage === 'beginning') {
+      options.middle = options.ending = null;
+      selections.middle = selections.ending = null;
+    } else if (stage === 'middle') {
+      options.ending = null;
+      selections.ending = null;
+    }
+    draft = null;
+    renderChoices(stage);
   });
 
-  updateLever(toneLever);
-  updateLever(evidenceLever);
+  $('continueButton').addEventListener('click', async () => {
+    if (inFlight) return;
+    const next =
+      currentStage === 'beginning' ? 'middle' : currentStage === 'middle' ? 'ending' : 'draft';
 
-  setTimeout(() => marginalia.classList.add('is-open'), 3200);
-  setTimeout(() => marginalia.classList.remove('is-open'), 11200);
+    if (next === 'draft') {
+      inFlight = true;
+      try {
+        await ensureDraft();
+        setStage('draft');
+      } catch (err) {
+        if (String(err.message) !== 'unauthenticated') errorToast(err);
+      } finally {
+        inFlight = false;
+      }
+
+      return;
+    }
+
+    setStage(next);
+  });
+
+  $('backButton').addEventListener('click', () =>
+    setStage(
+      currentStage === 'beginning' ? 'brief' : currentStage === 'middle' ? 'beginning' : 'middle',
+    ),
+  );
+  $('restartButton').addEventListener('click', () => setStage('beginning'));
+  $('brandButton').addEventListener('click', () => setStage('brief'));
+  $('newButton').addEventListener('click', () => resetAll(true));
+
+  document.querySelectorAll('.progress-step').forEach((b) =>
+    b.addEventListener('click', () => {
+      const target = b.dataset.step;
+      const reachable =
+        target === 'brief' ||
+        (target === 'beginning' && brief) ||
+        (target === 'middle' && selections.beginning) ||
+        (target === 'ending' && selections.middle) ||
+        (target === 'draft' && draft);
+      if (reachable) setStage(target);
+    }),
+  );
+
+  document.querySelectorAll('.map-item').forEach((x) =>
+    x.addEventListener('click', () => $(x.dataset.scroll).scrollIntoView({ behavior: 'smooth' })),
+  );
+
+  document.querySelectorAll('.regenerate-button').forEach((btn) =>
+    btn.addEventListener('click', () => regenerateSection(btn.dataset.regenerate)),
+  );
+
+  ['coreMessage', 'desiredEffect'].forEach((id) =>
+    $(id).addEventListener('input', () => {
+      const message = $('coreMessage').value.toLowerCase();
+      $('draftSpine').textContent = /rethink|reconsider|surprising|hidden/.test(message)
+        ? 'Surprise → explain → offer agency'
+        : 'Establish → develop → resolve';
+    }),
+  );
 })();
